@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Account - Carte TeenagersITA</title>
+  <title>Account - TeenagersITA Cards</title>
+  
+  <!-- FAVICON -->
+  <link rel="icon" type="image/png" href="logo.png">
+
   <style>
     * {
       box-sizing: border-box;
@@ -45,6 +49,13 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
       backdrop-filter: blur(16px);
       text-align: center;
+    }
+
+    .form-logo {
+      width: 80px;
+      height: auto;
+      margin-bottom: 15px;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
     }
 
     h2 {
@@ -121,6 +132,21 @@
       text-align: left;
     }
 
+    /* CONTENITORE E ICONA LIVELLO */
+    .level-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .level-icon {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+    }
+
     .back-link {
       display: inline-block;
       margin-top: 15px;
@@ -139,6 +165,7 @@
   <div class="bg-overlay"></div>
 
   <div class="card-container">
+    <img src="logo.png" alt="Logo TeenagersITA Cards" class="form-logo">
     
     <!-- SCHERMATA LOGIN / REGISTRAZIONE -->
     <div id="auth-section">
@@ -163,7 +190,7 @@
       <button class="btn btn-secondary" id="btn-toggle" onclick="toggleMode()">Non hai un account? Registrati</button>
     </div>
 
-    <!-- SCHERMATA PROFILO (Visibile dopo il Login) -->
+    <!-- SCHERMATA PROFILO -->
     <div id="profile-section" class="hidden">
       <h2>Profilo Giocatore</h2>
       
@@ -174,7 +201,10 @@
 
       <div class="stat-box">
         <small style="color: #94a3b8;">Livello</small>
-        <div id="user-level" style="font-weight: bold; color: #60a5fa;">Livello 1</div>
+        <div class="level-container">
+          <span id="user-level" style="font-weight: bold; color: #60a5fa; font-size: 1.1rem;">Livello 1</span>
+          <img id="user-level-icon" src="" alt="Icona Livello" class="level-icon" style="display: none;">
+        </div>
       </div>
 
       <button class="btn btn-secondary" onclick="logout()">Disconnetti</button>
@@ -200,7 +230,6 @@
       getDoc 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Configurazione Firebase con le tue chiavi
     const firebaseConfig = {
       apiKey: "AIzaSyCCqjJNoMeliQskPzlMAGOqeF_-aFZuksY",
       authDomain: "teenagersita-cards.firebaseapp.com",
@@ -211,14 +240,12 @@
       measurementId: "G-84P57RTZEV"
     };
 
-    // Inizializza Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
     let isRegisterMode = false;
 
-    // Cambia modalità tra Login e Registrazione
     window.toggleMode = function() {
       isRegisterMode = !isRegisterMode;
       document.getElementById('form-title').innerText = isRegisterMode ? "Crea un Account" : "Accedi al tuo account";
@@ -227,7 +254,6 @@
       document.getElementById('btn-toggle').innerText = isRegisterMode ? "Hai già un account? Accedi" : "Non hai un account? Registrati";
     };
 
-    // Gestione Login / Registrazione
     window.handleAuth = async function() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
@@ -244,11 +270,9 @@
             alert("Inserisci un nome utente.");
             return;
           }
-          // Registrazione nuovo utente
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const user = userCredential.user;
 
-          // Salva i dati iniziali su Firestore
           await setDoc(doc(db, "users", user.uid), {
             username: username,
             level: 1,
@@ -256,7 +280,6 @@
           });
 
         } else {
-          // Login utente esistente
           await signInWithEmailAndPassword(auth, email, password);
         }
       } catch (error) {
@@ -264,12 +287,14 @@
       }
     };
 
-    // Logout
+    // POP-UP DI CONFERMA SUL DISCONNETTI
     window.logout = function() {
-      signOut(auth);
+      const confirmLogout = confirm("Sei sicuro di volerti disconnettere?");
+      if (confirmLogout) {
+        signOut(auth);
+      }
     };
 
-    // Controllo Stato Autenticazione
     onAuthStateChanged(auth, async (user) => {
       const authSection = document.getElementById('auth-section');
       const profileSection = document.getElementById('profile-section');
@@ -278,14 +303,23 @@
         authSection.classList.add('hidden');
         profileSection.classList.remove('hidden');
 
-        // Recupera i dati da Firestore
         const docRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
           const data = docSnap.data();
+          const userLevel = data.level || 1;
+
           document.getElementById('user-display-name').innerText = data.username || "Giocatore";
-          document.getElementById('user-level').innerText = "Livello " + (data.level || 1);
+          document.getElementById('user-level').innerText = "Livello " + userLevel;
+
+          const levelIconImg = document.getElementById('user-level-icon');
+          levelIconImg.src = `${userLevel}.png`;
+          levelIconImg.style.display = 'inline-block';
+
+          levelIconImg.onerror = function() {
+            this.style.display = 'none';
+          };
         }
       } else {
         authSection.classList.remove('hidden');
