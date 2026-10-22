@@ -203,7 +203,7 @@
         <small style="color: #94a3b8;">Livello</small>
         <div class="level-container">
           <span id="user-level" style="font-weight: bold; color: #60a5fa; font-size: 1.1rem;">Livello 1</span>
-          <img id="user-level-icon" src="" alt="Icona Livello" class="level-icon" style="display: none;">
+          <img id="user-level-icon" src="1.png" alt="Icona Livello" class="level-icon">
         </div>
       </div>
 
@@ -287,7 +287,6 @@
       }
     };
 
-    // POP-UP DI CONFERMA SUL DISCONNETTI
     window.logout = function() {
       const confirmLogout = confirm("Sei sicuro di volerti disconnettere?");
       if (confirmLogout) {
@@ -313,12 +312,16 @@
           document.getElementById('user-display-name').innerText = data.username || "Giocatore";
           document.getElementById('user-level').innerText = "Livello " + userLevel;
 
+          // CARICAMENTO ICONA DINAMICA
           const levelIconImg = document.getElementById('user-level-icon');
           levelIconImg.src = `${userLevel}.png`;
           levelIconImg.style.display = 'inline-block';
 
+          // Se l'immagine del livello specifico non esiste, imposta 1.png come fallback
           levelIconImg.onerror = function() {
-            this.style.display = 'none';
+            if (this.src !== '1.png') {
+              this.src = '1.png';
+            }
           };
         }
       } else {
