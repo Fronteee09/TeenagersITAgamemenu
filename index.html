@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TeenagersITA Cards</title>
   
-  <!-- FAVICON (icona della scheda del browser) -->
+  <!-- FAVICON -->
   <link rel="icon" type="image/png" href="logo.png">
 
   <style>
@@ -52,21 +52,21 @@
     }
 
     .logo-img {
-      width: 90px;
+      width: 85px;
       height: auto;
-      margin-bottom: 15px;
+      margin-bottom: 12px;
       filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
     }
 
     h1 {
       font-size: 1.6rem;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
-    p {
+    .subtitle {
       color: #94a3b8;
       font-size: 0.9rem;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
       line-height: 1.4;
     }
 
@@ -98,6 +98,14 @@
     .btn-secondary:hover {
       background: rgba(255, 255, 255, 0.05);
     }
+
+    .credits {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.8rem;
+      color: #64748b;
+    }
   </style>
 </head>
 <body>
@@ -105,15 +113,18 @@
   <div class="bg-overlay"></div>
 
   <div class="card-container">
-    <!-- LOGO AL CENTRO DEL BOX -->
-    <img src="logo.png" alt="Logo" class="logo-img">
-    
+    <img src="logo.png" alt="Logo TeenagersITA Cards" class="logo-img">
     <h1>TeenagersITA Cards</h1>
-    <p>Colleziona le carte, sfida i bot e scala la classifica!</p>
+    <p class="subtitle">Benvenuto! Sfidaci e colleziona le carte della community.</p>
 
-    <!-- TASTI AL CENTRO -->
-    <a href="account.html" class="btn">Gioca / Accedi</a>
-    <a href="account.html" class="btn btn-secondary">Registrati</a>
+    <!-- Pulsanti di navigazione originali -->
+    <a href="account.html" class="btn">Profilo / Account</a>
+    <a href="#" class="btn btn-secondary">Gioca contro il Bot</a>
+
+    <!-- Sezione Crediti -->
+    <div class="credits">
+      Sviluppato da <strong>TeenagersITA</strong> • v1.0
+    </div>
   </div>
 
 </body>
