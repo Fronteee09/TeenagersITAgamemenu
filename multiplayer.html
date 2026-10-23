@@ -154,7 +154,6 @@
       color: #fff;
       font-size: 0.95rem;
       outline: none;
-      text-transform: uppercase;
     }
 
     .code-input:focus {
@@ -276,7 +275,7 @@
         <button class="btn-create" onclick="createPrivateMatch()">🎮 Crea Partita Privata</button>
         <h3>Oppure unisciti con un codice:</h3>
         <div class="private-controls">
-          <input type="text" id="custom-code-input" class="code-input" placeholder="ES: ABC12">
+          <input type="text" id="custom-code-input" class="code-input" placeholder="Inserisci codice" oninput="this.value = this.value.toUpperCase()">
           <button class="btn-join" onclick="joinByCode()">Entra</button>
         </div>
       </div>
@@ -364,13 +363,12 @@
       }
     });
 
-    // Ascolto in tempo reale delle stanze pubbliche (stanza_1 fino a stanza_10)
+    // Ascolto in tempo reale delle stanze pubbliche con ordinamento numerico (1-10)
     function listenToRooms() {
       onSnapshot(collection(db, "rooms"), (snapshot) => {
         const roomsListEl = document.getElementById('rooms-list');
         roomsListEl.innerHTML = "";
 
-        // Filtra e ordina solo le stanze pubbliche
         const publicDocs = snapshot.docs.filter(docSnap => docSnap.id.startsWith('stanza_'));
         
         const sortedDocs = publicDocs.sort((a, b) => {
@@ -423,7 +421,6 @@
       if (roomSnap.exists()) {
         roomData = roomSnap.data();
       } else {
-        // Se la stanza privata non esiste ancora, la crea
         await setDoc(roomRef, {
           status: "waiting",
           player1: null,
@@ -461,7 +458,12 @@
 
       document.getElementById('rooms-view').classList.add('hidden');
       document.getElementById('lobby-view').classList.remove('hidden');
-      document.getElementById('current-room-title').innerText = "Codice: " + roomId.toUpperCase();
+      
+      if (roomId.startsWith('stanza_')) {
+        document.getElementById('current-room-title').innerText = roomId.replace('stanza_', 'Stanza ').toUpperCase();
+      } else {
+        document.getElementById('current-room-title').innerText = "Codice: " + roomId.replace('priv_', '').toUpperCase();
+      }
 
       listenToCurrentRoom(roomId);
     };
@@ -470,7 +472,6 @@
     window.createPrivateMatch = async function() {
       if (!currentUser) return;
 
-      // Genera un codice casuale di 5 caratteri (es. A7X9Q)
       const randomCode = "priv_" + Math.random().toString(36).substring(2, 7).toUpperCase();
       
       const roomRef = doc(db, "rooms", randomCode);
@@ -488,21 +489,27 @@
 
       document.getElementById('rooms-view').classList.add('hidden');
       document.getElementById('lobby-view').classList.remove('hidden');
-      document.getElementById('current-room-title').innerText = "Partita Privata: " + randomCode.replace('PRIV_', '');
+      const displayCode = randomCode.replace('priv_', '').toUpperCase();
+      document.getElementById('current-room-title').innerText = "Partita Privata: " + displayCode;
 
       listenToCurrentRoom(randomCode);
-      alert("Partita creata con successo! Il codice della stanza è: " + randomCode.replace('PRIV_', ''));
+      alert("Partita creata con successo! Il codice della stanza è: " + displayCode);
     };
 
     // Entra tramite il codice digitato
     window.joinByCode = async function() {
-      const codeInput = document.getElementById('custom-code-input').value.trim().toUpperCase();
-      if (!codeInput) {
+      const rawCode = document.getElementById('custom-code-input').value.trim();
+      if (!rawCode) {
         alert("Inserisci un codice valido.");
         return;
       }
 
-      const fullRoomId = "priv_" + codeInput;
+      let cleanCode = rawCode.toUpperCase();
+      if (cleanCode.startsWith("PRIV_")) {
+        cleanCode = cleanCode.replace("PRIV_", "");
+      }
+
+      const fullRoomId = "priv_" + cleanCode;
       const roomRef = doc(db, "rooms", fullRoomId);
       const roomSnap = await getDoc(roomRef);
 
