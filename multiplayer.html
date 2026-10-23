@@ -60,7 +60,7 @@
     p.subtitle {
       color: #94a3b8;
       font-size: 0.9rem;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
     }
 
     /* LISTA STANZE */
@@ -68,9 +68,10 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 400px;
+      max-height: 280px;
       overflow-y: auto;
       padding-right: 5px;
+      margin-bottom: 20px;
     }
 
     .room-card {
@@ -123,6 +124,58 @@
       background: #475569 !important;
       cursor: not-allowed;
       opacity: 0.6;
+    }
+
+    /* SEZIONE PARTITA PRIVATA */
+    .private-section {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 20px;
+      margin-top: 15px;
+      text-align: left;
+    }
+
+    .private-section h3 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+      color: #94a3b8;
+    }
+
+    .private-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .code-input {
+      flex: 1;
+      padding: 11px 15px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(30, 41, 59, 0.7);
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      text-transform: uppercase;
+    }
+
+    .code-input:focus {
+      border-color: #3b82f6;
+    }
+
+    .btn-create {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-create:hover {
+      background: linear-gradient(180deg, #34d399 0%, #059669 100%);
     }
 
     /* VISTA STANZA SELEZIONATA (LOBBY) */
@@ -209,14 +262,23 @@
 
   <div class="main-container">
     
-    <!-- VISTA 1: LISTA STANZE -->
+    <!-- VISTA 1: LISTA STANZE & PARTITE PRIVATE -->
     <div id="rooms-view">
       <h1>Stanze Multiplayer</h1>
-      <p class="subtitle">Seleziona una stanza e attendi l'arrivo dello sfidante!</p>
+      <p class="subtitle">Scegli una stanza pubblica o crea una partita privata con codice!</p>
 
       <div class="rooms-grid" id="rooms-list">
-        <!-- Le stanze verranno caricate qui dinamicamente -->
         <p style="color: #94a3b8;">Caricamento stanze in corso...</p>
+      </div>
+
+      <!-- SEZIONE CREA / INSERISCI CODICE -->
+      <div class="private-section">
+        <button class="btn-create" onclick="createPrivateMatch()">🎮 Crea Partita Privata</button>
+        <h3>Oppure unisciti con un codice:</h3>
+        <div class="private-controls">
+          <input type="text" id="custom-code-input" class="code-input" placeholder="ES: ABC12">
+          <button class="btn-join" onclick="joinByCode()">Entra</button>
+        </div>
       </div>
 
       <a href="index.html" class="back-link">← Torna al Menu Principale</a>
@@ -257,6 +319,7 @@
       collection, 
       doc, 
       getDoc, 
+      setDoc,
       updateDoc, 
       onSnapshot 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -301,14 +364,16 @@
       }
     });
 
-    // Ascolto in tempo reale della lista stanze con ordinamento numerico
+    // Ascolto in tempo reale delle stanze pubbliche (stanza_1 fino a stanza_10)
     function listenToRooms() {
       onSnapshot(collection(db, "rooms"), (snapshot) => {
         const roomsListEl = document.getElementById('rooms-list');
         roomsListEl.innerHTML = "";
 
-        // Ordina le stanze numericamente (stanza_1, stanza_2, ... stanza_10)
-        const sortedDocs = snapshot.docs.sort((a, b) => {
+        // Filtra e ordina solo le stanze pubbliche
+        const publicDocs = snapshot.docs.filter(docSnap => docSnap.id.startsWith('stanza_'));
+        
+        const sortedDocs = publicDocs.sort((a, b) => {
           const numA = parseInt(a.id.replace('stanza_', ''), 10) || 0;
           const numB = parseInt(b.id.replace('stanza_', ''), 10) || 0;
           return numA - numB;
@@ -347,15 +412,24 @@
       });
     }
 
-    // Entra in una stanza
+    // Entra in una stanza esistente
     window.joinRoom = async function(roomId) {
       if (!currentUser) return;
 
       const roomRef = doc(db, "rooms", roomId);
       const roomSnap = await getDoc(roomRef);
 
-      if (!roomSnap.exists()) return;
-      const roomData = roomSnap.data();
+      let roomData = {};
+      if (roomSnap.exists()) {
+        roomData = roomSnap.data();
+      } else {
+        // Se la stanza privata non esiste ancora, la crea
+        await setDoc(roomRef, {
+          status: "waiting",
+          player1: null,
+          player2: null
+        });
+      }
 
       let slotToUse = null;
 
@@ -375,7 +449,7 @@
         photoURL: userProfileData.photoURL
       };
 
-      if (slotToUse === "player2" || (roomData.player1 && slotToUse === "player2")) {
+      if (slotToUse === "player2" || roomData.player1) {
         updatePayload.status = "playing";
       } else {
         updatePayload.status = "waiting";
@@ -387,9 +461,57 @@
 
       document.getElementById('rooms-view').classList.add('hidden');
       document.getElementById('lobby-view').classList.remove('hidden');
-      document.getElementById('current-room-title').innerText = roomId.replace('stanza_', 'Stanza ').toUpperCase();
+      document.getElementById('current-room-title').innerText = "Codice: " + roomId.toUpperCase();
 
       listenToCurrentRoom(roomId);
+    };
+
+    // Crea una partita privata con codice casuale
+    window.createPrivateMatch = async function() {
+      if (!currentUser) return;
+
+      // Genera un codice casuale di 5 caratteri (es. A7X9Q)
+      const randomCode = "priv_" + Math.random().toString(36).substring(2, 7).toUpperCase();
+      
+      const roomRef = doc(db, "rooms", randomCode);
+      await setDoc(roomRef, {
+        status: "waiting",
+        player1: {
+          uid: currentUser.uid,
+          username: userProfileData.username,
+          photoURL: userProfileData.photoURL
+        },
+        player2: null
+      });
+
+      activeRoomId = randomCode;
+
+      document.getElementById('rooms-view').classList.add('hidden');
+      document.getElementById('lobby-view').classList.remove('hidden');
+      document.getElementById('current-room-title').innerText = "Partita Privata: " + randomCode.replace('PRIV_', '');
+
+      listenToCurrentRoom(randomCode);
+      alert("Partita creata con successo! Il codice della stanza è: " + randomCode.replace('PRIV_', ''));
+    };
+
+    // Entra tramite il codice digitato
+    window.joinByCode = async function() {
+      const codeInput = document.getElementById('custom-code-input').value.trim().toUpperCase();
+      if (!codeInput) {
+        alert("Inserisci un codice valido.");
+        return;
+      }
+
+      const fullRoomId = "priv_" + codeInput;
+      const roomRef = doc(db, "rooms", fullRoomId);
+      const roomSnap = await getDoc(roomRef);
+
+      if (!roomSnap.exists()) {
+        alert("Nessuna stanza trovata con questo codice!");
+        return;
+      }
+
+      window.joinRoom(fullRoomId);
     };
 
     // Ascolta i dati dei 2 utenti dentro la stanza
@@ -420,7 +542,7 @@
           document.getElementById('lobby-status').innerText = "Entrambi i giocatori sono pronti!";
           document.getElementById('lobby-status').style.color = "#4ade80";
         } else {
-          document.getElementById('lobby-status').innerText = "In attesa dell'avversario...";
+          document.getElementById('lobby-status').innerText = "In attesa dell'avversario... Condividi il codice!";
           document.getElementById('lobby-status').style.color = "#94a3b8";
         }
       });
@@ -457,6 +579,7 @@
       activeRoomId = null;
       document.getElementById('lobby-view').classList.add('hidden');
       document.getElementById('rooms-view').classList.remove('hidden');
+      document.getElementById('custom-code-input').value = "";
     };
 
     window.addEventListener('beforeunload', () => {
