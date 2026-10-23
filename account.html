@@ -63,6 +63,36 @@
       font-size: 1.6rem;
     }
 
+    /* AVATAR UTENTE */
+    .avatar-wrapper {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      margin: 0 auto 15px auto;
+    }
+
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #3b82f6;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .avatar-upload-btn {
+      display: inline-block;
+      margin-top: 5px;
+      font-size: 0.8rem;
+      color: #60a5fa;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .avatar-upload-btn:hover {
+      color: #93c5fd;
+    }
+
     .input-group {
       margin-bottom: 15px;
       text-align: left;
@@ -187,8 +217,16 @@
     <!-- SCHERMATA PROFILO -->
     <div id="profile-section" class="hidden">
       <h2>Profilo Giocatore</h2>
+
+      <!-- AVATAR UTENTE -->
+      <div class="avatar-wrapper">
+        <img id="user-avatar" src="logo.png" alt="Foto Profilo" class="avatar-img">
+      </div>
+      <label for="avatar-input" class="avatar-upload-btn">📷 Cambia Immagine</label>
+      <input type="file" id="avatar-input" accept="image/*" style="display: none;" onchange="uploadAvatar(event)">
+      <p id="upload-status" style="font-size: 0.75rem; color: #60a5fa; margin-top: 4px; display: none;"></p>
       
-      <div class="stat-box">
+      <div class="stat-box" style="margin-top: 15px;">
         <small style="color: #94a3b8;">Nome Utente</small>
         <div id="user-display-name" style="font-weight: bold; font-size: 1.1rem;">-</div>
       </div>
@@ -221,8 +259,15 @@
       getFirestore, 
       doc, 
       setDoc, 
-      getDoc 
+      getDoc,
+      updateDoc 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { 
+      getStorage, 
+      ref, 
+      uploadBytes, 
+      getDownloadURL 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCCqjJNoMeliQskPzlMAGOqeF_-aFZuksY",
@@ -237,8 +282,10 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    const storage = getStorage(app);
 
     let isRegisterMode = false;
+    let currentUser = null;
 
     window.toggleMode = function() {
       isRegisterMode = !isRegisterMode;
@@ -256,7 +303,6 @@
         return;
       }
 
-      // Convertiamo lo username in un'email interna valida per Firebase
       const internalEmail = `${username.toLowerCase().replace(/\s+/g, '')}@teenagersita.local`;
 
       try {
@@ -267,6 +313,7 @@
           await setDoc(doc(db, "users", user.uid), {
             username: username,
             level: 1,
+            photoURL: "",
             cardsUnlocked: []
           });
 
@@ -275,6 +322,41 @@
         }
       } catch (error) {
         alert("Errore: Nome utente o password non validi.");
+      }
+    };
+
+    // CARICAMENTO IMMAGINE SU FIREBASE STORAGE
+    window.uploadAvatar = async function(event) {
+      const file = event.target.files[0];
+      if (!file || !currentUser) return;
+
+      const statusEl = document.getElementById('upload-status');
+      statusEl.style.display = 'block';
+      statusEl.innerText = "Caricamento in corso...";
+
+      try {
+        // Riferimento al percorso su Firebase Storage
+        const storageRef = ref(storage, `avatars/${currentUser.uid}`);
+        
+        // Upload del file
+        await uploadBytes(storageRef, file);
+        
+        // Ottieni URL dell'immagine
+        const downloadURL = await getDownloadURL(storageRef);
+
+        // Salva URL nel database Firestore dell'utente
+        await updateDoc(doc(db, "users", currentUser.uid), {
+          photoURL: downloadURL
+        });
+
+        // Aggiorna l'anteprima dell'immagine a schermo
+        document.getElementById('user-avatar').src = downloadURL;
+        statusEl.innerText = "Immagine aggiornata!";
+        setTimeout(() => { statusEl.style.display = 'none'; }, 2000);
+
+      } catch (err) {
+        console.error(err);
+        statusEl.innerText = "Errore nel caricamento.";
       }
     };
 
@@ -290,6 +372,7 @@
       const profileSection = document.getElementById('profile-section');
 
       if (user) {
+        currentUser = user;
         authSection.classList.add('hidden');
         profileSection.classList.remove('hidden');
 
@@ -303,6 +386,13 @@
           document.getElementById('user-display-name').innerText = data.username || "Giocatore";
           document.getElementById('user-level').innerText = "Livello " + userLevel;
 
+          // Se l'utente ha una foto profilata su Firestore, la mostra, altrimenti usa logo.png
+          if (data.photoURL) {
+            document.getElementById('user-avatar').src = data.photoURL;
+          } else {
+            document.getElementById('user-avatar').src = "logo.png";
+          }
+
           const levelIconImg = document.getElementById('user-level-icon');
           levelIconImg.src = `${userLevel}.png`;
           levelIconImg.style.display = 'inline-block';
@@ -314,6 +404,7 @@
           };
         }
       } else {
+        currentUser = null;
         authSection.classList.remove('hidden');
         profileSection.classList.add('hidden');
       }
