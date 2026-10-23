@@ -139,27 +139,80 @@
       object-fit: contain;
     }
 
-    /* PULSANTE DISCONNETTI */
+    /* INPUTS & FORMS */
+    .auth-input {
+      width: 100%;
+      padding: 11px 14px;
+      margin-bottom: 10px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .auth-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+    }
+
+    .tabs {
+      display: flex;
+      margin-bottom: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 3px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    /* PULSANTI */
     .btn {
       display: block;
       width: 100%;
       padding: 13px;
       border-radius: 25px;
       border: none;
-      background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+      background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
       color: #fff;
       font-weight: 600;
       text-decoration: none;
       font-size: 0.95rem;
       cursor: pointer;
-      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
       transition: all 0.2s ease;
-      margin-top: 18px;
+      margin-top: 10px;
     }
 
     .btn:hover {
-      background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
+      background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
       transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
     }
 
     .back-link {
@@ -173,6 +226,14 @@
 
     .back-link:hover {
       color: #94a3b8;
+    }
+
+    .hidden { display: none !important; }
+
+    #auth-error {
+      color: #f87171;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -190,26 +251,41 @@
     <!-- AVATAR -->
     <img src="logo.png" alt="Avatar Giocatore" class="profile-avatar">
     
-    <h1>Profilo Giocatore</h1>
-    <a href="#" class="change-img-link" onclick="alert('Funzione cambio immagine in arrivo!'); return false;">📷 Cambia Immagine</a>
+    <h1 id="page-title">Profilo Giocatore</h1>
+    <a href="#" id="change-img-btn" class="change-img-link" onclick="alert('Funzione cambio immagine in arrivo!'); return false;">📷 Cambia Immagine</a>
 
-    <!-- NOME UTENTE -->
-    <div class="info-box">
-      <div class="info-label">Nome Utente</div>
-      <div id="username-display" class="info-value">-</div>
-    </div>
-
-    <!-- LIVELLO -->
-    <div class="info-box">
-      <div class="info-label">Livello</div>
-      <div class="level-row">
-        <span id="level-text-display" class="info-value">Livello 1</span>
-        <img id="level-box-img" src="1.png" alt="Badge Livello" class="level-mini-icon">
+    <!-- SEZIONE PROFILO (Visibile se loggato) -->
+    <div id="profile-section" class="hidden">
+      <div class="info-box">
+        <div class="info-label">Nome Utente</div>
+        <div id="username-display" class="info-value">-</div>
       </div>
+
+      <div class="info-box">
+        <div class="info-label">Livello</div>
+        <div class="level-row">
+          <span id="level-text-display" class="info-value">Livello 1</span>
+          <img id="level-box-img" src="1.png" alt="Badge Livello" class="level-mini-icon">
+        </div>
+      </div>
+
+      <button class="btn btn-danger" onclick="handleLogout()">Disconnettiti</button>
     </div>
 
-    <!-- DISCONNETTI -->
-    <button class="btn" onclick="handleLogout()">Disconnettiti</button>
+    <!-- SEZIONE AUTENTICAZIONE (Visibile se NON loggato) -->
+    <div id="auth-section">
+      <div class="tabs">
+        <button id="tab-login" class="tab-btn active" onclick="switchMode('login')">Accedi</button>
+        <button id="tab-register" class="tab-btn" onclick="switchMode('register')">Registrati</button>
+      </div>
+
+      <form onsubmit="handleAuth(event)">
+        <input type="text" id="auth-nickname" class="auth-input" placeholder="Il tuo Nickname" required autocomplete="username">
+        <input type="password" id="auth-password" class="auth-input" placeholder="Password (min. 6 caratteri)" required autocomplete="current-password">
+        <div id="auth-error"></div>
+        <button type="submit" id="auth-submit-btn" class="btn">Accedi</button>
+      </form>
+    </div>
 
     <div>
       <a href="index.html" class="back-link">← Torna al menu principale</a>
@@ -219,8 +295,14 @@
   <!-- SCRIPT -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { 
+      getAuth, 
+      onAuthStateChanged, 
+      signInWithEmailAndPassword, 
+      createUserWithEmailAndPassword, 
+      signOut 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCCqjJNoMeliQskPzlMAGOqeF_-aFZuksY",
@@ -235,29 +317,48 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Caricamento immediato da localStorage per non mostrare "Caricamento..."
-    function loadLocalAccountData() {
-      const savedLevel = localStorage.getItem('user_level') || '1';
-      const savedUsername = localStorage.getItem('username') || localStorage.getItem('nickname');
+    let authMode = 'login';
 
-      if (savedUsername) {
-        document.getElementById('username-display').innerText = savedUsername;
+    window.switchMode = function(mode) {
+      authMode = mode;
+      document.getElementById('auth-error').innerText = '';
+      const tabLogin = document.getElementById('tab-login');
+      const tabRegister = document.getElementById('tab-register');
+      const submitBtn = document.getElementById('auth-submit-btn');
+
+      if (mode === 'login') {
+        tabLogin.classList.add('active');
+        tabRegister.classList.remove('active');
+        submitBtn.innerText = "Accedi";
+      } else {
+        tabRegister.classList.add('active');
+        tabLogin.classList.remove('active');
+        submitBtn.innerText = "Registrati";
       }
+    };
 
+    // Aggiornamento livello e grafica locale
+    function loadLevelData() {
+      const savedLevel = localStorage.getItem('user_level') || '1';
       document.getElementById('level-text-display').innerText = `Livello ${savedLevel}`;
       document.getElementById('level-top-img').src = `${savedLevel}.png`;
       document.getElementById('level-box-img').src = `${savedLevel}.png`;
     }
 
-    loadLocalAccountData();
+    loadLevelData();
 
-    // Sincronizzazione con Firebase Auth & Firestore
     onAuthStateChanged(auth, async (user) => {
+      const profileSection = document.getElementById('profile-section');
+      const authSection = document.getElementById('auth-section');
       const usernameElem = document.getElementById('username-display');
+      const changeImgBtn = document.getElementById('change-img-btn');
 
       if (user) {
-        let detectedName = "";
+        authSection.classList.add('hidden');
+        profileSection.classList.remove('hidden');
+        changeImgBtn.style.display = 'inline-block';
 
+        let detectedName = "";
         try {
           const userDocRef = doc(db, "utenti", user.uid);
           const userDocSnap = await getDoc(userDocRef);
@@ -266,16 +367,13 @@
             const data = userDocSnap.data();
             if (data.username) detectedName = data.username;
             else if (data.nickname) detectedName = data.nickname;
-            else if (data.displayName) detectedName = data.displayName;
           }
         } catch (err) {
           console.warn("Firestore error:", err);
         }
 
         if (!detectedName) {
-          if (user.displayName) {
-            detectedName = user.displayName;
-          } else if (user.email) {
+          if (user.email) {
             const rawName = user.email.split('@')[0];
             detectedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
           } else {
@@ -284,19 +382,55 @@
         }
 
         usernameElem.innerText = detectedName;
-        localStorage.setItem('username', detectedName);
       } else {
-        if (usernameElem.innerText === "-" || usernameElem.innerText === "Caricamento...") {
-          usernameElem.innerText = "Ospite";
-        }
+        profileSection.classList.add('hidden');
+        authSection.classList.remove('hidden');
+        changeImgBtn.style.display = 'none';
       }
     });
 
+    window.handleAuth = async function(e) {
+      e.preventDefault();
+      const inputNick = document.getElementById('auth-nickname').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const errorDiv = document.getElementById('auth-error');
+      errorDiv.innerText = "";
+
+      if (!inputNick) {
+        errorDiv.innerText = "Inserisci un nickname.";
+        return;
+      }
+
+      const cleanNick = inputNick.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const emailToUse = cleanNick + "@teenagersita.local";
+
+      try {
+        if (authMode === 'login') {
+          await signInWithEmailAndPassword(auth, emailToUse, password);
+        } else {
+          const userCred = await createUserWithEmailAndPassword(auth, emailToUse, password);
+          // Salva su Firestore
+          await setDoc(doc(db, "utenti", userCred.user.uid), {
+            username: inputNick,
+            createdAt: new Date()
+          });
+        }
+      } catch (err) {
+        if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+          errorDiv.innerText = "Nickname o Password non corretti.";
+        } else if (err.code === 'auth/email-already-in-use') {
+          errorDiv.innerText = "Questo nickname è già registrato!";
+        } else if (err.code === 'auth/weak-password') {
+          errorDiv.innerText = "La password deve avere almeno 6 caratteri.";
+        } else {
+          errorDiv.innerText = "Errore: " + err.message;
+        }
+      }
+    };
+
     window.handleLogout = function() {
       signOut(auth).then(() => {
-        localStorage.removeItem('username');
-        localStorage.removeItem('user_level');
-        window.location.href = 'index.html';
+        window.location.reload();
       });
     };
   </script>
