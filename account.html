@@ -132,7 +132,6 @@
       text-align: left;
     }
 
-    /* CONTENITORE E ICONA LIVELLO */
     .level-container {
       display: flex;
       align-items: center;
@@ -170,15 +169,10 @@
     <!-- SCHERMATA LOGIN / REGISTRAZIONE -->
     <div id="auth-section">
       <h2 id="form-title">Accedi al tuo account</h2>
-      
-      <div class="input-group" id="username-group" style="display: none;">
-        <label>Nome Utente</label>
-        <input type="text" id="username" placeholder="Es: Gamer123">
-      </div>
 
       <div class="input-group">
-        <label>Email</label>
-        <input type="email" id="email" placeholder="nome@email.com">
+        <label>Nome Utente</label>
+        <input type="text" id="username" placeholder="Es: Gamer123">
       </div>
 
       <div class="input-group">
@@ -249,28 +243,25 @@
     window.toggleMode = function() {
       isRegisterMode = !isRegisterMode;
       document.getElementById('form-title').innerText = isRegisterMode ? "Crea un Account" : "Accedi al tuo account";
-      document.getElementById('username-group').style.display = isRegisterMode ? "block" : "none";
       document.getElementById('btn-main').innerText = isRegisterMode ? "Registrati" : "Accedi";
       document.getElementById('btn-toggle').innerText = isRegisterMode ? "Hai già un account? Accedi" : "Non hai un account? Registrati";
     };
 
     window.handleAuth = async function() {
-      const email = document.getElementById('email').value;
+      const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
-      const username = document.getElementById('username').value;
 
-      if (!email || !password) {
-        alert("Inserisci email e password.");
+      if (!username || !password) {
+        alert("Inserisci Nome Utente e Password.");
         return;
       }
 
+      // Convertiamo lo username in un'email interna valida per Firebase
+      const internalEmail = `${username.toLowerCase().replace(/\s+/g, '')}@teenagersita.local`;
+
       try {
         if (isRegisterMode) {
-          if (!username) {
-            alert("Inserisci un nome utente.");
-            return;
-          }
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          const userCredential = await createUserWithEmailAndPassword(auth, internalEmail, password);
           const user = userCredential.user;
 
           await setDoc(doc(db, "users", user.uid), {
@@ -280,10 +271,10 @@
           });
 
         } else {
-          await signInWithEmailAndPassword(auth, email, password);
+          await signInWithEmailAndPassword(auth, internalEmail, password);
         }
       } catch (error) {
-        alert("Errore: " + error.message);
+        alert("Errore: Nome utente o password non validi.");
       }
     };
 
@@ -312,12 +303,10 @@
           document.getElementById('user-display-name').innerText = data.username || "Giocatore";
           document.getElementById('user-level').innerText = "Livello " + userLevel;
 
-          // CARICAMENTO ICONA DINAMICA
           const levelIconImg = document.getElementById('user-level-icon');
           levelIconImg.src = `${userLevel}.png`;
           levelIconImg.style.display = 'inline-block';
 
-          // Se l'immagine del livello specifico non esiste, imposta 1.png come fallback
           levelIconImg.onerror = function() {
             if (this.src !== '1.png') {
               this.src = '1.png';
