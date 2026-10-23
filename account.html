@@ -367,34 +367,41 @@
         authSection.classList.add('hidden');
         profileSection.classList.remove('hidden');
 
+        // Se il database Firestore non ha ancora il nome salvato, usa il nome estratto dall'email come sicurezza
+        let fallbackUsername = user.email ? user.email.split('@')[0] : "Giocatore";
+
         const docRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(docRef);
 
+        let finalUsername = fallbackUsername;
+        let userLevel = 1;
+        let photoURL = "";
+
         if (docSnap.exists()) {
           const data = docSnap.data();
-          const userLevel = data.level || 1;
-
-          document.getElementById('user-display-name').innerText = data.username || "Giocatore";
-          document.getElementById('user-level').innerText = "Livello " + userLevel;
-
-          if (data.photoURL) {
-            document.getElementById('user-avatar').src = data.photoURL;
-          } else {
-            document.getElementById('user-avatar').src = "logo.png";
-          }
-
-          const levelIconImg = document.getElementById('user-level-icon');
-          levelIconImg.src = `${userLevel}.png`;
-          levelIconImg.style.display = 'inline-block';
-
-          levelIconImg.onerror = function() {
-            if (this.src !== '1.png') {
-              this.src = '1.png';
-            }
-          };
-        } else {
-          document.getElementById('user-display-name').innerText = "Giocatore";
+          if (data.username) finalUsername = data.username;
+          if (data.level) userLevel = data.level;
+          if (data.photoURL) photoURL = data.photoURL;
         }
+
+        document.getElementById('user-display-name').innerText = finalUsername;
+        document.getElementById('user-level').innerText = "Livello " + userLevel;
+
+        if (photoURL) {
+          document.getElementById('user-avatar').src = photoURL;
+        } else {
+          document.getElementById('user-avatar').src = "logo.png";
+        }
+
+        const levelIconImg = document.getElementById('user-level-icon');
+        levelIconImg.src = `${userLevel}.png`;
+        levelIconImg.style.display = 'inline-block';
+
+        levelIconImg.onerror = function() {
+          if (this.src !== '1.png') {
+            this.src = '1.png';
+          }
+        };
       } else {
         currentUser = null;
         authSection.classList.remove('hidden');
