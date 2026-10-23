@@ -285,7 +285,6 @@
       if (user) {
         currentUser = user;
         
-        // Recupera il profilo dell'utente loggato
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
@@ -297,19 +296,25 @@
 
         listenToRooms();
       } else {
-        // Se non è loggato lo manda ad accedere
         alert("Devi effettuare l'accesso per accedere alle stanze!");
         window.location.href = "account.html";
       }
     });
 
-    // Ascolto in tempo reale della lista stanze
+    // Ascolto in tempo reale della lista stanze con ordinamento numerico
     function listenToRooms() {
       onSnapshot(collection(db, "rooms"), (snapshot) => {
         const roomsListEl = document.getElementById('rooms-list');
         roomsListEl.innerHTML = "";
 
-        snapshot.docs.forEach((docSnap) => {
+        // Ordina le stanze numericamente (stanza_1, stanza_2, ... stanza_10)
+        const sortedDocs = snapshot.docs.sort((a, b) => {
+          const numA = parseInt(a.id.replace('stanza_', ''), 10) || 0;
+          const numB = parseInt(b.id.replace('stanza_', ''), 10) || 0;
+          return numA - numB;
+        });
+
+        sortedDocs.forEach((docSnap) => {
           const roomId = docSnap.id;
           const roomData = docSnap.data();
 
@@ -363,7 +368,6 @@
         return;
       }
 
-      // Salva le info dell'utente nel rispettivo slot
       const updatePayload = {};
       updatePayload[slotToUse] = {
         uid: currentUser.uid,
@@ -381,12 +385,10 @@
 
       activeRoomId = roomId;
 
-      // Passa alla vista Lobby
       document.getElementById('rooms-view').classList.add('hidden');
       document.getElementById('lobby-view').classList.remove('hidden');
       document.getElementById('current-room-title').innerText = roomId.replace('stanza_', 'Stanza ').toUpperCase();
 
-      // Ascolta i cambiamenti in tempo reale della stanza corrente
       listenToCurrentRoom(roomId);
     };
 
@@ -398,7 +400,6 @@
         if (!docSnap.exists()) return;
         const data = docSnap.data();
 
-        // GIOCATORE 1
         if (data.player1) {
           document.getElementById('p1-name').innerText = data.player1.username || "Giocatore 1";
           document.getElementById('p1-avatar').src = data.player1.photoURL || "logo.png";
@@ -407,7 +408,6 @@
           document.getElementById('p1-avatar').src = "logo.png";
         }
 
-        // GIOCATORE 2
         if (data.player2) {
           document.getElementById('p2-name').innerText = data.player2.username || "Giocatore 2";
           document.getElementById('p2-avatar').src = data.player2.photoURL || "logo.png";
@@ -416,7 +416,6 @@
           document.getElementById('p2-avatar').src = "logo.png";
         }
 
-        // Stato Lobby
         if (data.player1 && data.player2) {
           document.getElementById('lobby-status').innerText = "Entrambi i giocatori sono pronti!";
           document.getElementById('lobby-status').style.color = "#4ade80";
@@ -445,7 +444,6 @@
           updatePayload.player2 = null;
         }
 
-        // Se la stanza si svuota del tutto, torna a status 'waiting'
         if ((!data.player1 || data.player1.uid === currentUser.uid) && 
             (!data.player2 || data.player2.uid === currentUser.uid)) {
           updatePayload.status = "waiting";
@@ -461,7 +459,6 @@
       document.getElementById('rooms-view').classList.remove('hidden');
     };
 
-    // Rimuove il giocatore se chiude o ricarica la scheda
     window.addEventListener('beforeunload', () => {
       if (activeRoomId) {
         window.leaveRoom();
