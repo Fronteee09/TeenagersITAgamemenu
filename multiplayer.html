@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiplayer - TeenagersITA Cards</title>
+
+  <!-- FAVICON -->
+  <link rel="icon" type="image/png" href="logo.png">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #090e18 url('sfondocarte1.png') no-repeat center center fixed;
+      background-size: cover;
+      color: #ffffff;
+      padding: 20px;
+    }
+
+    .bg-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 10, 20, 0.65);
+      backdrop-filter: blur(8px);
+      z-index: 1;
+    }
+
+    .main-container {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 600px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 30px 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(16px);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 25px;
+    }
+
+    /* LISTA STANZE */
+    .rooms-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+
+    .room-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+
+    .room-card:hover {
+      border-color: rgba(59, 130, 246, 0.5);
+      background: rgba(30, 41, 59, 0.8);
+    }
+
+    .room-info {
+      text-align: left;
+    }
+
+    .room-title {
+      font-weight: bold;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .room-status {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
+    .btn-join {
+      padding: 8px 18px;
+      border-radius: 20px;
+      border: none;
+      background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-join:hover {
+      background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+    }
+
+    .btn-disabled {
+      background: #475569 !important;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    /* VISTA STANZA SELEZIONATA (LOBBY) */
+    .arena-container {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin: 30px 0;
+      gap: 15px;
+    }
+
+    .player-card {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 20px 15px;
+      width: 45%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 180px;
+      justify-content: center;
+    }
+
+    .player-avatar {
+      width: 75px;
+      height: 75px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #3b82f6;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    .player-name {
+      font-weight: bold;
+      font-size: 1rem;
+      color: #ffffff;
+      word-break: break-word;
+    }
+
+    .vs-badge {
+      font-weight: 900;
+      font-size: 1.4rem;
+      color: #ef4444;
+      text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .btn-leave {
+      background: transparent;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      padding: 10px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 15px;
+    }
+
+    .btn-leave:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+
+    .back-link:hover {
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-overlay"></div>
+
+  <div class="main-container">
+    
+    <!-- VISTA 1: LISTA STANZE -->
+    <div id="rooms-view">
+      <h1>Stanze Multiplayer</h1>
+      <p class="subtitle">Seleziona una stanza e attendi l'arrivo dello sfidante!</p>
+
+      <div class="rooms-grid" id="rooms-list">
+        <!-- Le stanze verranno caricate qui dinamicamente -->
+        <p style="color: #94a3b8;">Caricamento stanze in corso...</p>
+      </div>
+
+      <a href="index.html" class="back-link">← Torna al Menu Principale</a>
+    </div>
+
+    <!-- VISTA 2: DENTRO LA STANZA -->
+    <div id="lobby-view" class="hidden">
+      <h1 id="current-room-title">Stanza</h1>
+      <p class="subtitle" id="lobby-status">In attesa dell'avversario...</p>
+
+      <div class="arena-container">
+        <!-- GIOCATORE 1 -->
+        <div class="player-card">
+          <img id="p1-avatar" src="logo.png" alt="Giocatore 1" class="player-avatar">
+          <div id="p1-name" class="player-name">In attesa...</div>
+        </div>
+
+        <div class="vs-badge">VS</div>
+
+        <!-- GIOCATORE 2 -->
+        <div class="player-card">
+          <img id="p2-avatar" src="logo.png" alt="Giocatore 2" class="player-avatar">
+          <div id="p2-name" class="player-name">In attesa...</div>
+        </div>
+      </div>
+
+      <button class="btn-leave" onclick="leaveRoom()">Abbandona Stanza</button>
+    </div>
+
+  </div>
+
+  <!-- FIREBASE SCRIPT -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      getDoc, 
+      updateDoc, 
+      onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCqjJNoMeliQskPzlMAGOqeF_-aFZuksY",
+      authDomain: "teenagersita-cards.firebaseapp.com",
+      projectId: "teenagersita-cards",
+      storageBucket: "teenagersita-cards.firebasestorage.app",
+      messagingSenderId: "651917703980",
+      appId: "1:651917703980:web:d4c8f87b4645e97c46ca89",
+      measurementId: "G-84P57RTZEV"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+    let userProfileData = { username: "Giocatore", photoURL: "logo.png" };
+    let activeRoomId = null;
+    let unsubscribeRoomListener = null;
+
+    // Controllo Autenticazione
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        
+        // Recupera il profilo dell'utente loggato
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          userProfileData.username = data.username || (user.email ? user.email.split('@')[0] : "Giocatore");
+          userProfileData.photoURL = data.photoURL || "logo.png";
+        } else {
+          userProfileData.username = user.email ? user.email.split('@')[0] : "Giocatore";
+        }
+
+        listenToRooms();
+      } else {
+        // Se non è loggato lo manda ad accedere
+        alert("Devi effettuare l'accesso per accedere alle stanze!");
+        window.location.href = "account.html";
+      }
+    });
+
+    // Ascolto in tempo reale della lista stanze
+    function listenToRooms() {
+      onSnapshot(collection(db, "rooms"), (snapshot) => {
+        const roomsListEl = document.getElementById('rooms-list');
+        roomsListEl.innerHTML = "";
+
+        snapshot.docs.forEach((docSnap) => {
+          const roomId = docSnap.id;
+          const roomData = docSnap.data();
+
+          const p1 = roomData.player1 || null;
+          const p2 = roomData.player2 || null;
+
+          let count = 0;
+          if (p1) count++;
+          if (p2) count++;
+
+          const roomCard = document.createElement('div');
+          roomCard.className = 'room-card';
+
+          const isFull = count >= 2;
+          const roomNameFormatted = roomId.replace('stanza_', 'Stanza ');
+
+          roomCard.innerHTML = `
+            <div class="room-info">
+              <div class="room-title">${roomNameFormatted.toUpperCase()}</div>
+              <div class="room-status">${count}/2 Giocatori</div>
+            </div>
+            <button class="btn-join ${isFull ? 'btn-disabled' : ''}" 
+                    onclick="joinRoom('${roomId}')" ${isFull ? 'disabled' : ''}>
+              ${isFull ? 'Piena' : 'Entra'}
+            </button>
+          `;
+
+          roomsListEl.appendChild(roomCard);
+        });
+      });
+    }
+
+    // Entra in una stanza
+    window.joinRoom = async function(roomId) {
+      if (!currentUser) return;
+
+      const roomRef = doc(db, "rooms", roomId);
+      const roomSnap = await getDoc(roomRef);
+
+      if (!roomSnap.exists()) return;
+      const roomData = roomSnap.data();
+
+      let slotToUse = null;
+
+      if (!roomData.player1) {
+        slotToUse = "player1";
+      } else if (!roomData.player2) {
+        slotToUse = "player2";
+      } else {
+        alert("La stanza è già piena!");
+        return;
+      }
+
+      // Salva le info dell'utente nel rispettivo slot
+      const updatePayload = {};
+      updatePayload[slotToUse] = {
+        uid: currentUser.uid,
+        username: userProfileData.username,
+        photoURL: userProfileData.photoURL
+      };
+
+      if (slotToUse === "player2" || (roomData.player1 && slotToUse === "player2")) {
+        updatePayload.status = "playing";
+      } else {
+        updatePayload.status = "waiting";
+      }
+
+      await updateDoc(roomRef, updatePayload);
+
+      activeRoomId = roomId;
+
+      // Passa alla vista Lobby
+      document.getElementById('rooms-view').classList.add('hidden');
+      document.getElementById('lobby-view').classList.remove('hidden');
+      document.getElementById('current-room-title').innerText = roomId.replace('stanza_', 'Stanza ').toUpperCase();
+
+      // Ascolta i cambiamenti in tempo reale della stanza corrente
+      listenToCurrentRoom(roomId);
+    };
+
+    // Ascolta i dati dei 2 utenti dentro la stanza
+    function listenToCurrentRoom(roomId) {
+      const roomRef = doc(db, "rooms", roomId);
+
+      unsubscribeRoomListener = onSnapshot(roomRef, (docSnap) => {
+        if (!docSnap.exists()) return;
+        const data = docSnap.data();
+
+        // GIOCATORE 1
+        if (data.player1) {
+          document.getElementById('p1-name').innerText = data.player1.username || "Giocatore 1";
+          document.getElementById('p1-avatar').src = data.player1.photoURL || "logo.png";
+        } else {
+          document.getElementById('p1-name').innerText = "In attesa...";
+          document.getElementById('p1-avatar').src = "logo.png";
+        }
+
+        // GIOCATORE 2
+        if (data.player2) {
+          document.getElementById('p2-name').innerText = data.player2.username || "Giocatore 2";
+          document.getElementById('p2-avatar').src = data.player2.photoURL || "logo.png";
+        } else {
+          document.getElementById('p2-name').innerText = "In attesa...";
+          document.getElementById('p2-avatar').src = "logo.png";
+        }
+
+        // Stato Lobby
+        if (data.player1 && data.player2) {
+          document.getElementById('lobby-status').innerText = "Entrambi i giocatori sono pronti!";
+          document.getElementById('lobby-status').style.color = "#4ade80";
+        } else {
+          document.getElementById('lobby-status').innerText = "In attesa dell'avversario...";
+          document.getElementById('lobby-status').style.color = "#94a3b8";
+        }
+      });
+    }
+
+    // Abbandona la stanza e azzera lo slot
+    window.leaveRoom = async function() {
+      if (!activeRoomId || !currentUser) return;
+
+      const roomRef = doc(db, "rooms", activeRoomId);
+      const roomSnap = await getDoc(roomRef);
+
+      if (roomSnap.exists()) {
+        const data = roomSnap.data();
+        const updatePayload = {};
+
+        if (data.player1 && data.player1.uid === currentUser.uid) {
+          updatePayload.player1 = null;
+        }
+        if (data.player2 && data.player2.uid === currentUser.uid) {
+          updatePayload.player2 = null;
+        }
+
+        // Se la stanza si svuota del tutto, torna a status 'waiting'
+        if ((!data.player1 || data.player1.uid === currentUser.uid) && 
+            (!data.player2 || data.player2.uid === currentUser.uid)) {
+          updatePayload.status = "waiting";
+        }
+
+        await updateDoc(roomRef, updatePayload);
+      }
+
+      if (unsubscribeRoomListener) unsubscribeRoomListener();
+
+      activeRoomId = null;
+      document.getElementById('lobby-view').classList.add('hidden');
+      document.getElementById('rooms-view').classList.remove('hidden');
+    };
+
+    // Rimuove il giocatore se chiude o ricarica la scheda
+    window.addEventListener('beforeunload', () => {
+      if (activeRoomId) {
+        window.leaveRoom();
+      }
+    });
+  </script>
+</body>
+</html>
