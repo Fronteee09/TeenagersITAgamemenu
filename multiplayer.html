@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Multiplayer - TeenagersITA Cards</title>
+  <title>Multiplayer Arena - TeenagersITA Cards</title>
 
   <!-- FAVICON -->
   <link rel="icon" type="image/png" href="logo.png">
@@ -24,7 +24,7 @@
       background: #090e18 url('sfondocarte1.png') no-repeat center center fixed;
       background-size: cover;
       color: #ffffff;
-      padding: 20px;
+      padding: 15px;
     }
 
     .bg-overlay {
@@ -33,7 +33,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(5, 10, 20, 0.65);
+      background: rgba(5, 10, 20, 0.75);
       backdrop-filter: blur(8px);
       z-index: 1;
     }
@@ -42,11 +42,11 @@
       position: relative;
       z-index: 2;
       width: 100%;
-      max-width: 600px;
-      background: rgba(15, 23, 42, 0.85);
+      max-width: 900px;
+      background: rgba(15, 23, 42, 0.9);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 20px;
-      padding: 30px 20px;
+      padding: 25px;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
       backdrop-filter: blur(16px);
       text-align: center;
@@ -63,7 +63,7 @@
       margin-bottom: 20px;
     }
 
-    /* LISTA STANZE */
+    /* VISTA STANZE */
     .rooms-grid {
       display: flex;
       flex-direction: column;
@@ -82,16 +82,6 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      transition: all 0.2s ease;
-    }
-
-    .room-card:hover {
-      border-color: rgba(59, 130, 246, 0.5);
-      background: rgba(30, 41, 59, 0.8);
-    }
-
-    .room-info {
-      text-align: left;
     }
 
     .room-title {
@@ -113,11 +103,6 @@
       color: #fff;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .btn-join:hover {
-      background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
     }
 
     .btn-disabled {
@@ -126,18 +111,11 @@
       opacity: 0.6;
     }
 
-    /* SEZIONE PARTITA PRIVATA */
     .private-section {
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       padding-top: 20px;
       margin-top: 15px;
       text-align: left;
-    }
-
-    .private-section h3 {
-      font-size: 1rem;
-      margin-bottom: 10px;
-      color: #94a3b8;
     }
 
     .private-controls {
@@ -152,12 +130,7 @@
       border: 1px solid rgba(255, 255, 255, 0.15);
       background: rgba(30, 41, 59, 0.7);
       color: #fff;
-      font-size: 0.95rem;
       outline: none;
-    }
-
-    .code-input:focus {
-      border-color: #3b82f6;
     }
 
     .btn-create {
@@ -170,76 +143,153 @@
       font-weight: 600;
       cursor: pointer;
       margin-bottom: 12px;
-      transition: all 0.2s ease;
     }
 
-    .btn-create:hover {
-      background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+    /* VISTA CAMPO DI BATTAGLIA (ARENA) */
+    .turn-indicator {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid #3b82f6;
+      color: #60a5fa;
     }
 
-    /* VISTA STANZA SELEZIONATA (LOBBY) */
-    .arena-container {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      margin: 30px 0;
-      gap: 15px;
+    .turn-indicator.my-turn {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: #22c55e;
+      color: #4ade80;
     }
 
-    .player-card {
-      background: rgba(30, 41, 59, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 16px;
-      padding: 20px 15px;
-      width: 45%;
+    .battle-grid {
       display: flex;
       flex-direction: column;
+      gap: 20px;
+    }
+
+    .player-section {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 15px;
+    }
+
+    .player-header {
+      display: flex;
       align-items: center;
-      min-height: 180px;
-      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-weight: bold;
     }
 
     .player-avatar {
-      width: 75px;
-      height: 75px;
+      width: 35px;
+      height: 35px;
       border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid #3b82f6;
-      margin-bottom: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     }
 
-    .player-name {
+    .cards-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .game-card {
+      background: rgba(15, 23, 42, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      transition: transform 0.2s;
+    }
+
+    .game-card.dead {
+      opacity: 0.3;
+      filter: grayscale(100%);
+      pointer-events: none;
+    }
+
+    .game-card img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      margin-bottom: 5px;
+    }
+
+    .card-name {
+      font-size: 0.85rem;
       font-weight: bold;
-      font-size: 1rem;
-      color: #ffffff;
-      word-break: break-word;
+      margin-bottom: 4px;
     }
 
-    .vs-badge {
-      font-weight: 900;
-      font-size: 1.4rem;
-      color: #ef4444;
-      text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    /* BARRA HP */
+    .hp-bar-container {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 4px;
     }
 
-    .hidden {
-      display: none !important;
+    .hp-bar-fill {
+      height: 100%;
+      background: #22c55e;
+      width: 100%;
+      transition: width 0.3s;
     }
+
+    .hp-text {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+
+    .card-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+    }
+
+    .act-btn {
+      padding: 5px;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      color: #fff;
+    }
+
+    .act-attack {
+      background: #eab308;
+    }
+
+    .act-ability {
+      background: #a855f7;
+    }
+
+    .act-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .hidden { display: none !important; }
 
     .btn-leave {
       background: transparent;
       border: 1px solid #ef4444;
       color: #ef4444;
-      padding: 10px 20px;
+      padding: 8px 18px;
       border-radius: 20px;
       cursor: pointer;
-      font-weight: 600;
       margin-top: 15px;
-    }
-
-    .btn-leave:hover {
-      background: rgba(239, 68, 68, 0.1);
     }
 
     .back-link {
@@ -249,10 +299,6 @@
       text-decoration: none;
       font-size: 0.85rem;
     }
-
-    .back-link:hover {
-      color: #fff;
-    }
   </style>
 </head>
 <body>
@@ -261,19 +307,18 @@
 
   <div class="main-container">
     
-    <!-- VISTA 1: LISTA STANZE & PARTITE PRIVATE -->
+    <!-- VISTA 1: STANZE -->
     <div id="rooms-view">
       <h1>Stanze Multiplayer</h1>
-      <p class="subtitle">Scegli una stanza pubblica o crea una partita privata con codice!</p>
+      <p class="subtitle">Scegli una stanza pubblica o crea una partita privata!</p>
 
       <div class="rooms-grid" id="rooms-list">
         <p style="color: #94a3b8;">Caricamento stanze in corso...</p>
       </div>
 
-      <!-- SEZIONE CREA / INSERISCI CODICE -->
       <div class="private-section">
         <button class="btn-create" onclick="createPrivateMatch()">🎮 Crea Partita Privata</button>
-        <h3>Oppure unisciti con un codice:</h3>
+        <h3>Oppure unisciti con codice:</h3>
         <div class="private-controls">
           <input type="text" id="custom-code-input" class="code-input" placeholder="Inserisci codice" oninput="this.value = this.value.toUpperCase()">
           <button class="btn-join" onclick="joinByCode()">Entra</button>
@@ -283,24 +328,28 @@
       <a href="index.html" class="back-link">← Torna al Menu Principale</a>
     </div>
 
-    <!-- VISTA 2: DENTRO LA STANZA -->
+    <!-- VISTA 2: CAMPO DI BATTAGLIA -->
     <div id="lobby-view" class="hidden">
-      <h1 id="current-room-title">Stanza</h1>
-      <p class="subtitle" id="lobby-status">In attesa dell'avversario...</p>
+      <h1 id="current-room-title">Partita Multiplayer</h1>
+      <div id="turn-badge" class="turn-indicator">In attesa dell'avversario...</div>
 
-      <div class="arena-container">
-        <!-- GIOCATORE 1 -->
-        <div class="player-card">
-          <img id="p1-avatar" src="logo.png" alt="Giocatore 1" class="player-avatar">
-          <div id="p1-name" class="player-name">In attesa...</div>
+      <div class="battle-grid">
+        <!-- SEZIONE AVVERSARIO -->
+        <div class="player-section">
+          <div class="player-header">
+            <img id="enemy-avatar" src="logo.png" class="player-avatar">
+            <span id="enemy-name">Avversario</span>
+          </div>
+          <div id="enemy-hand" class="cards-row"></div>
         </div>
 
-        <div class="vs-badge">VS</div>
-
-        <!-- GIOCATORE 2 -->
-        <div class="player-card">
-          <img id="p2-avatar" src="logo.png" alt="Giocatore 2" class="player-avatar">
-          <div id="p2-name" class="player-name">In attesa...</div>
+        <!-- SEZIONE MIO PERSONAGGIO -->
+        <div class="player-section">
+          <div class="player-header">
+            <img id="my-avatar" src="logo.png" class="player-avatar">
+            <span id="my-name">Tu</span>
+          </div>
+          <div id="my-hand" class="cards-row"></div>
         </div>
       </div>
 
@@ -309,7 +358,7 @@
 
   </div>
 
-  <!-- FIREBASE SCRIPT -->
+  <!-- FIREBASE & LOGICA DI GIOCO -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -318,10 +367,54 @@
       collection, 
       doc, 
       getDoc, 
-      setDoc,
+      setDoc, 
       updateDoc, 
       onSnapshot 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // ARCHIVIO CARTE
+    const teenCardsArchive = {
+      "frontealpino": {
+        name: "Fronte Alpino",
+        image: "frontealpino.png",
+        hp: 80,
+        maxHp: 80,
+        attack: { name: "Attacco", damage: 10 },
+        ability: { name: "Abilità", damage: 20, description: "20 Danni" }
+      },
+      "clipp3r": {
+        name: "Clipp3r",
+        image: "clipp3r.png",
+        hp: 80,
+        maxHp: 80,
+        attack: { name: "Attacco", damage: 15 },
+        ability: { name: "Sketchbook", damage: 30, description: "30 Danni" }
+      },
+      "fronte": {
+        name: "Fronte",
+        image: "fronte.png",
+        hp: 100,
+        maxHp: 100,
+        attack: { name: "Attacco", damage: 15 },
+        ability: { name: "Bombardata", damage: 60, description: "60 Danni" }
+      },
+      "aspro": {
+        name: "Aspro",
+        image: "aspro.png",
+        hp: 100,
+        maxHp: 100,
+        attack: { name: "Attacco", damage: 20 },
+        ability: { name: "Aspro", damage: 50, description: "50 Danni" }
+      },
+      "automoderator": {
+        name: "Automoderator",
+        image: "automoderator.png",
+        hp: 40,
+        maxHp: 40,
+        attack: { name: "Attacco", damage: 10 },
+        ability: { name: "Ban", damage: 999, description: "Elimina carta" }
+      }
+    };
 
     const firebaseConfig = {
       apiKey: "AIzaSyCCqjJNoMeliQskPzlMAGOqeF_-aFZuksY",
@@ -329,8 +422,7 @@
       projectId: "teenagersita-cards",
       storageBucket: "teenagersita-cards.firebasestorage.app",
       messagingSenderId: "651917703980",
-      appId: "1:651917703980:web:d4c8f87b4645e97c46ca89",
-      measurementId: "G-84P57RTZEV"
+      appId: "1:651917703980:web:d4c8f87b4645e97c46ca89"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -342,61 +434,65 @@
     let activeRoomId = null;
     let unsubscribeRoomListener = null;
 
-    // Controllo Autenticazione
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUser = user;
-        
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
-          userProfileData.username = data.username || (user.email ? user.email.split('@')[0] : "Giocatore");
-          userProfileData.photoURL = data.photoURL || "logo.png";
+          userProfileData.username = data.username || user.email.split('@')[0];
         } else {
           userProfileData.username = user.email ? user.email.split('@')[0] : "Giocatore";
         }
-
         listenToRooms();
       } else {
-        alert("Devi effettuare l'accesso per accedere alle stanze!");
+        alert("Devi accedere per giocare!");
         window.location.href = "account.html";
       }
     });
 
-    // Ascolto in tempo reale delle stanze pubbliche con ordinamento numerico (1-10)
+    // Funzione per generare 4 carte casuali
+    function generateRandomHand() {
+      const keys = Object.keys(teenCardsArchive);
+      const hand = [];
+      for (let i = 0; i < 4; i++) {
+        const randKey = keys[Math.floor(Math.random() * keys.length)];
+        const card = teenCardsArchive[randKey];
+        hand.push({
+          uid: randKey + "_" + Math.random().toString(36).substr(2, 5),
+          cardId: randKey,
+          name: card.name,
+          image: card.image,
+          hp: card.hp,
+          maxHp: card.maxHp,
+          attack: card.attack.damage,
+          abilityDamage: card.ability.damage,
+          abilityName: card.ability.name,
+          abilityUsed: false
+        });
+      }
+      return hand;
+    }
+
     function listenToRooms() {
       onSnapshot(collection(db, "rooms"), (snapshot) => {
         const roomsListEl = document.getElementById('rooms-list');
         roomsListEl.innerHTML = "";
-
         const publicDocs = snapshot.docs.filter(docSnap => docSnap.id.startsWith('stanza_'));
-        
-        const sortedDocs = publicDocs.sort((a, b) => {
-          const numA = parseInt(a.id.replace('stanza_', ''), 10) || 0;
-          const numB = parseInt(b.id.replace('stanza_', ''), 10) || 0;
-          return numA - numB;
-        });
 
-        sortedDocs.forEach((docSnap) => {
+        publicDocs.forEach((docSnap) => {
           const roomId = docSnap.id;
           const roomData = docSnap.data();
-
-          const p1 = roomData.player1 || null;
-          const p2 = roomData.player2 || null;
-
           let count = 0;
-          if (p1) count++;
-          if (p2) count++;
-
-          const roomCard = document.createElement('div');
-          roomCard.className = 'room-card';
+          if (roomData.player1) count++;
+          if (roomData.player2) count++;
 
           const isFull = count >= 2;
-          const roomNameFormatted = roomId.replace('stanza_', 'Stanza ');
-
+          const roomCard = document.createElement('div');
+          roomCard.className = 'room-card';
           roomCard.innerHTML = `
             <div class="room-info">
-              <div class="room-title">${roomNameFormatted.toUpperCase()}</div>
+              <div class="room-title">${roomId.replace('stanza_', 'Stanza ').toUpperCase()}</div>
               <div class="room-status">${count}/2 Giocatori</div>
             </div>
             <button class="btn-join ${isFull ? 'btn-disabled' : ''}" 
@@ -404,196 +500,186 @@
               ${isFull ? 'Piena' : 'Entra'}
             </button>
           `;
-
           roomsListEl.appendChild(roomCard);
         });
       });
     }
 
-    // Entra in una stanza esistente
     window.joinRoom = async function(roomId) {
       if (!currentUser) return;
-
       const roomRef = doc(db, "rooms", roomId);
       const roomSnap = await getDoc(roomRef);
 
-      let roomData = {};
-      if (roomSnap.exists()) {
-        roomData = roomSnap.data();
-      } else {
-        await setDoc(roomRef, {
-          status: "waiting",
-          player1: null,
-          player2: null
-        });
-      }
-
-      let slotToUse = null;
+      let roomData = roomSnap.exists() ? roomSnap.data() : {};
+      let updatePayload = {};
 
       if (!roomData.player1) {
-        slotToUse = "player1";
-      } else if (!roomData.player2) {
-        slotToUse = "player2";
+        updatePayload.player1 = { uid: currentUser.uid, username: userProfileData.username, hand: generateRandomHand() };
+        updatePayload.status = "waiting";
+      } else if (!roomData.player2 && roomData.player1.uid !== currentUser.uid) {
+        updatePayload.player2 = { uid: currentUser.uid, username: userProfileData.username, hand: generateRandomHand() };
+        updatePayload.status = "playing";
+        updatePayload.turn = roomData.player1.uid; // Comincia player1
       } else {
-        alert("La stanza è già piena!");
+        alert("Impossibile entrare nella stanza.");
         return;
       }
 
-      const updatePayload = {};
-      updatePayload[slotToUse] = {
-        uid: currentUser.uid,
-        username: userProfileData.username,
-        photoURL: userProfileData.photoURL
-      };
-
-      if (slotToUse === "player2" || roomData.player1) {
-        updatePayload.status = "playing";
-      } else {
-        updatePayload.status = "waiting";
-      }
-
       await updateDoc(roomRef, updatePayload);
-
       activeRoomId = roomId;
 
       document.getElementById('rooms-view').classList.add('hidden');
       document.getElementById('lobby-view').classList.remove('hidden');
-      
-      if (roomId.startsWith('stanza_')) {
-        document.getElementById('current-room-title').innerText = roomId.replace('stanza_', 'Stanza ').toUpperCase();
-      } else {
-        document.getElementById('current-room-title').innerText = "Codice: " + roomId.replace('priv_', '').toUpperCase();
-      }
-
       listenToCurrentRoom(roomId);
     };
 
-    // Crea una partita privata con codice casuale
     window.createPrivateMatch = async function() {
       if (!currentUser) return;
+      const code = "priv_" + Math.random().toString(36).substring(2, 7).toUpperCase();
+      const roomRef = doc(db, "rooms", code);
 
-      const randomCode = "priv_" + Math.random().toString(36).substring(2, 7).toUpperCase();
-      
-      const roomRef = doc(db, "rooms", randomCode);
       await setDoc(roomRef, {
         status: "waiting",
-        player1: {
-          uid: currentUser.uid,
-          username: userProfileData.username,
-          photoURL: userProfileData.photoURL
-        },
+        player1: { uid: currentUser.uid, username: userProfileData.username, hand: generateRandomHand() },
         player2: null
       });
 
-      activeRoomId = randomCode;
-
+      activeRoomId = code;
       document.getElementById('rooms-view').classList.add('hidden');
       document.getElementById('lobby-view').classList.remove('hidden');
-      const displayCode = randomCode.replace('priv_', '').toUpperCase();
-      document.getElementById('current-room-title').innerText = "Partita Privata: " + displayCode;
-
-      listenToCurrentRoom(randomCode);
-      alert("Partita creata con successo! Il codice della stanza è: " + displayCode);
+      listenToCurrentRoom(code);
+      alert("Codice stanza: " + code.replace('priv_', ''));
     };
 
-    // Entra tramite il codice digitato
     window.joinByCode = async function() {
-      const rawCode = document.getElementById('custom-code-input').value.trim();
-      if (!rawCode) {
-        alert("Inserisci un codice valido.");
-        return;
-      }
-
-      let cleanCode = rawCode.toUpperCase();
-      if (cleanCode.startsWith("PRIV_")) {
-        cleanCode = cleanCode.replace("PRIV_", "");
-      }
-
-      const fullRoomId = "priv_" + cleanCode;
-      const roomRef = doc(db, "rooms", fullRoomId);
-      const roomSnap = await getDoc(roomRef);
-
-      if (!roomSnap.exists()) {
-        alert("Nessuna stanza trovata con questo codice!");
-        return;
-      }
-
-      window.joinRoom(fullRoomId);
+      const code = document.getElementById('custom-code-input').value.trim().toUpperCase();
+      if (code) window.joinRoom("priv_" + code.replace("PRIV_", ""));
     };
 
-    // Ascolta i dati dei 2 utenti dentro la stanza
     function listenToCurrentRoom(roomId) {
       const roomRef = doc(db, "rooms", roomId);
-
       unsubscribeRoomListener = onSnapshot(roomRef, (docSnap) => {
         if (!docSnap.exists()) return;
         const data = docSnap.data();
 
-        if (data.player1) {
-          document.getElementById('p1-name').innerText = data.player1.username || "Giocatore 1";
-          document.getElementById('p1-avatar').src = data.player1.photoURL || "logo.png";
+        const isP1 = data.player1 && data.player1.uid === currentUser.uid;
+        const myData = isP1 ? data.player1 : data.player2;
+        const enemyData = isP1 ? data.player2 : data.player1;
+
+        // Turno
+        const turnBadge = document.getElementById('turn-badge');
+        const isMyTurn = data.turn === currentUser.uid;
+
+        if (data.status === "waiting") {
+          turnBadge.innerText = "In attesa dell'avversario...";
+          turnBadge.className = "turn-indicator";
+        } else if (isMyTurn) {
+          turnBadge.innerText = "È IL TUO TURNO!";
+          turnBadge.className = "turn-indicator my-turn";
         } else {
-          document.getElementById('p1-name').innerText = "In attesa...";
-          document.getElementById('p1-avatar').src = "logo.png";
+          turnBadge.innerText = "Turno dell'avversario...";
+          turnBadge.className = "turn-indicator";
         }
 
-        if (data.player2) {
-          document.getElementById('p2-name').innerText = data.player2.username || "Giocatore 2";
-          document.getElementById('p2-avatar').src = data.player2.photoURL || "logo.png";
-        } else {
-          document.getElementById('p2-name').innerText = "In attesa...";
-          document.getElementById('p2-avatar').src = "logo.png";
+        // Render Carte
+        if (myData) {
+          document.getElementById('my-name').innerText = myData.username + " (Tu)";
+          renderHand(document.getElementById('my-hand'), myData.hand, true, isMyTurn);
         }
-
-        if (data.player1 && data.player2) {
-          document.getElementById('lobby-status').innerText = "Entrambi i giocatori sono pronti!";
-          document.getElementById('lobby-status').style.color = "#4ade80";
+        if (enemyData) {
+          document.getElementById('enemy-name').innerText = enemyData.username;
+          renderHand(document.getElementById('enemy-hand'), enemyData.hand, false, isMyTurn);
         } else {
-          document.getElementById('lobby-status').innerText = "In attesa dell'avversario... Condividi il codice!";
-          document.getElementById('lobby-status').style.color = "#94a3b8";
+          document.getElementById('enemy-hand').innerHTML = "<p style='color:#94a3b8;'>Attesa giocatore...</p>";
         }
       });
     }
 
-    // Abbandona la stanza e azzera lo slot
-    window.leaveRoom = async function() {
+    function renderHand(container, hand, isMine, isMyTurn) {
+      container.innerHTML = "";
+      if (!hand) return;
+
+      hand.forEach((card, index) => {
+        const cardEl = document.createElement('div');
+        cardEl.className = `game-card ${card.hp <= 0 ? 'dead' : ''}`;
+        
+        const hpPercent = Math.max(0, (card.hp / card.maxHp) * 100);
+
+        cardEl.innerHTML = `
+          <img src="${card.image}" alt="${card.name}">
+          <div class="card-name">${card.name}</div>
+          <div class="hp-bar-container">
+            <div class="hp-bar-fill" style="width: ${hpPercent}%"></div>
+          </div>
+          <div class="hp-text">${Math.max(0, card.hp)} / ${card.maxHp} HP</div>
+          ${isMine && card.hp > 0 ? `
+            <div class="card-actions">
+              <button class="act-btn act-attack" ${!isMyTurn ? 'disabled' : ''} onclick="executeMove(${index}, 'attack')">Attacca (${card.attack})</button>
+              <button class="act-btn act-ability" ${!isMyTurn || card.abilityUsed ? 'disabled' : ''} onclick="executeMove(${index}, 'ability')">${card.abilityName}</button>
+            </div>
+          ` : ''}
+        `;
+        container.appendChild(cardEl);
+      });
+    }
+
+    window.executeMove = async function(cardIndex, type) {
       if (!activeRoomId || !currentUser) return;
 
       const roomRef = doc(db, "rooms", activeRoomId);
       const roomSnap = await getDoc(roomRef);
+      if (!roomSnap.exists()) return;
 
-      if (roomSnap.exists()) {
-        const data = roomSnap.data();
-        const updatePayload = {};
+      const data = roomSnap.data();
+      if (data.turn !== currentUser.uid) return;
 
-        if (data.player1 && data.player1.uid === currentUser.uid) {
-          updatePayload.player1 = null;
-        }
-        if (data.player2 && data.player2.uid === currentUser.uid) {
-          updatePayload.player2 = null;
-        }
+      const isP1 = data.player1.uid === currentUser.uid;
+      const myData = isP1 ? data.player1 : data.player2;
+      const enemyData = isP1 ? data.player2 : data.player1;
 
-        if ((!data.player1 || data.player1.uid === currentUser.uid) && 
-            (!data.player2 || data.player2.uid === currentUser.uid)) {
-          updatePayload.status = "waiting";
-        }
+      if (!enemyData || !enemyData.hand) return;
 
-        await updateDoc(roomRef, updatePayload);
+      // Trova la prima carta viva dell'avversario
+      const enemyCardIndex = enemyData.hand.findIndex(c => c.hp > 0);
+      if (enemyCardIndex === -1) {
+        alert("L'avversario non ha più carte attive!");
+        return;
       }
 
-      if (unsubscribeRoomListener) unsubscribeRoomListener();
+      const myCard = myData.hand[cardIndex];
+      let damage = 0;
 
-      activeRoomId = null;
-      document.getElementById('lobby-view').classList.add('hidden');
-      document.getElementById('rooms-view').classList.remove('hidden');
-      document.getElementById('custom-code-input').value = "";
+      if (type === 'attack') {
+        damage = myCard.attack;
+      } else if (type === 'ability') {
+        damage = myCard.abilityDamage;
+        myCard.abilityUsed = true;
+      }
+
+      // Applica danno
+      enemyData.hand[enemyCardIndex].hp -= damage;
+
+      // Cambia turno
+      const nextTurn = enemyData.uid;
+
+      const updatePayload = {};
+      if (isP1) {
+        updatePayload.player1 = myData;
+        updatePayload.player2 = enemyData;
+      } else {
+        updatePayload.player2 = myData;
+        updatePayload.player1 = enemyData;
+      }
+      updatePayload.turn = nextTurn;
+
+      await updateDoc(roomRef, updatePayload);
     };
 
-    window.addEventListener('beforeunload', () => {
-      if (activeRoomId) {
-        window.leaveRoom();
-      }
-    });
+    window.leaveRoom = async function() {
+      if (unsubscribeRoomListener) unsubscribeRoomListener();
+      document.getElementById('lobby-view').classList.add('hidden');
+      document.getElementById('rooms-view').classList.remove('hidden');
+    };
   </script>
 </body>
 </html>
