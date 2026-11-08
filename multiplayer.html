@@ -145,7 +145,7 @@
       margin-bottom: 12px;
     }
 
-    /* VISTA CAMPO DI BATTAGLIA (ARENA) */
+    /* VISTA CAMPO DI BATTAGLIA */
     .turn-indicator {
       display: inline-block;
       padding: 8px 16px;
@@ -205,7 +205,6 @@
       flex-direction: column;
       align-items: center;
       position: relative;
-      transition: transform 0.2s;
     }
 
     .game-card.dead {
@@ -227,7 +226,6 @@
       margin-bottom: 4px;
     }
 
-    /* BARRA HP */
     .hp-bar-container {
       width: 100%;
       height: 10px;
@@ -267,18 +265,9 @@
       color: #fff;
     }
 
-    .act-attack {
-      background: #eab308;
-    }
-
-    .act-ability {
-      background: #a855f7;
-    }
-
-    .act-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
+    .act-attack { background: #eab308; }
+    .act-ability { background: #a855f7; }
+    .act-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .hidden { display: none !important; }
 
@@ -334,7 +323,6 @@
       <div id="turn-badge" class="turn-indicator">In attesa dell'avversario...</div>
 
       <div class="battle-grid">
-        <!-- SEZIONE AVVERSARIO -->
         <div class="player-section">
           <div class="player-header">
             <img id="enemy-avatar" src="logo.png" class="player-avatar">
@@ -343,7 +331,6 @@
           <div id="enemy-hand" class="cards-row"></div>
         </div>
 
-        <!-- SEZIONE MIO PERSONAGGIO -->
         <div class="player-section">
           <div class="player-header">
             <img id="my-avatar" src="logo.png" class="player-avatar">
@@ -358,7 +345,6 @@
 
   </div>
 
-  <!-- FIREBASE & LOGICA DI GIOCO -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -372,48 +358,12 @@
       onSnapshot 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ARCHIVIO CARTE
     const teenCardsArchive = {
-      "frontealpino": {
-        name: "Fronte Alpino",
-        image: "frontealpino.png",
-        hp: 80,
-        maxHp: 80,
-        attack: { name: "Attacco", damage: 10 },
-        ability: { name: "Abilità", damage: 20, description: "20 Danni" }
-      },
-      "clipp3r": {
-        name: "Clipp3r",
-        image: "clipp3r.png",
-        hp: 80,
-        maxHp: 80,
-        attack: { name: "Attacco", damage: 15 },
-        ability: { name: "Sketchbook", damage: 30, description: "30 Danni" }
-      },
-      "fronte": {
-        name: "Fronte",
-        image: "fronte.png",
-        hp: 100,
-        maxHp: 100,
-        attack: { name: "Attacco", damage: 15 },
-        ability: { name: "Bombardata", damage: 60, description: "60 Danni" }
-      },
-      "aspro": {
-        name: "Aspro",
-        image: "aspro.png",
-        hp: 100,
-        maxHp: 100,
-        attack: { name: "Attacco", damage: 20 },
-        ability: { name: "Aspro", damage: 50, description: "50 Danni" }
-      },
-      "automoderator": {
-        name: "Automoderator",
-        image: "automoderator.png",
-        hp: 40,
-        maxHp: 40,
-        attack: { name: "Attacco", damage: 10 },
-        ability: { name: "Ban", damage: 999, description: "Elimina carta" }
-      }
+      "frontealpino": { name: "Fronte Alpino", image: "frontealpino.png", hp: 80, maxHp: 80, attack: { damage: 10 }, ability: { name: "Abilità", damage: 20 } },
+      "clipp3r": { name: "Clipp3r", image: "clipp3r.png", hp: 80, maxHp: 80, attack: { damage: 15 }, ability: { name: "Sketchbook", damage: 30 } },
+      "fronte": { name: "Fronte", image: "fronte.png", hp: 100, maxHp: 100, attack: { damage: 15 }, ability: { name: "Bombardata", damage: 60 } },
+      "aspro": { name: "Aspro", image: "aspro.png", hp: 100, maxHp: 100, attack: { damage: 20 }, ability: { name: "Aspro", damage: 50 } },
+      "automoderator": { name: "Automoderator", image: "automoderator.png", hp: 40, maxHp: 40, attack: { damage: 10 }, ability: { name: "Ban", damage: 999 } }
     };
 
     const firebaseConfig = {
@@ -439,8 +389,7 @@
         currentUser = user;
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
-          const data = userDoc.data();
-          userProfileData.username = data.username || user.email.split('@')[0];
+          userProfileData.username = userDoc.data().username || user.email.split('@')[0];
         } else {
           userProfileData.username = user.email ? user.email.split('@')[0] : "Giocatore";
         }
@@ -451,7 +400,6 @@
       }
     });
 
-    // Funzione per generare 4 carte casuali
     function generateRandomHand() {
       const keys = Object.keys(teenCardsArchive);
       const hand = [];
@@ -475,33 +423,50 @@
     }
 
     function listenToRooms() {
-      onSnapshot(collection(db, "rooms"), (snapshot) => {
+      onSnapshot(collection(db, "rooms"), async (snapshot) => {
         const roomsListEl = document.getElementById('rooms-list');
         roomsListEl.innerHTML = "";
-        const publicDocs = snapshot.docs.filter(docSnap => docSnap.id.startsWith('stanza_'));
+        
+        const now = Date.now();
+        const twoMinutes = 2 * 60 * 1000;
 
-        publicDocs.forEach((docSnap) => {
+        for (const docSnap of snapshot.docs) {
           const roomId = docSnap.id;
           const roomData = docSnap.data();
-          let count = 0;
-          if (roomData.player1) count++;
-          if (roomData.player2) count++;
 
-          const isFull = count >= 2;
-          const roomCard = document.createElement('div');
-          roomCard.className = 'room-card';
-          roomCard.innerHTML = `
-            <div class="room-info">
-              <div class="room-title">${roomId.replace('stanza_', 'Stanza ').toUpperCase()}</div>
-              <div class="room-status">${count}/2 Giocatori</div>
-            </div>
-            <button class="btn-join ${isFull ? 'btn-disabled' : ''}" 
-                    onclick="joinRoom('${roomId}')" ${isFull ? 'disabled' : ''}>
-              ${isFull ? 'Piena' : 'Entra'}
-            </button>
-          `;
-          roomsListEl.appendChild(roomCard);
-        });
+          // Controllo AFK / Inattività superiore a 2 minuti
+          if (roomData.lastActive && (now - roomData.lastActive > twoMinutes)) {
+            await updateDoc(doc(db, "rooms", roomId), {
+              status: "waiting",
+              player1: null,
+              player2: null,
+              turn: null,
+              lastActive: null
+            });
+            continue;
+          }
+
+          if (roomId.startsWith('stanza_')) {
+            let count = 0;
+            if (roomData.player1) count++;
+            if (roomData.player2) count++;
+
+            const isFull = count >= 2;
+            const roomCard = document.createElement('div');
+            roomCard.className = 'room-card';
+            roomCard.innerHTML = `
+              <div class="room-info">
+                <div class="room-title">${roomId.replace('stanza_', 'Stanza ').toUpperCase()}</div>
+                <div class="room-status">${count}/2 Giocatori</div>
+              </div>
+              <button class="btn-join ${isFull ? 'btn-disabled' : ''}" 
+                      onclick="joinRoom('${roomId}')" ${isFull ? 'disabled' : ''}>
+                ${isFull ? 'Piena' : 'Entra'}
+              </button>
+            `;
+            roomsListEl.appendChild(roomCard);
+          }
+        }
       });
     }
 
@@ -516,10 +481,12 @@
       if (!roomData.player1) {
         updatePayload.player1 = { uid: currentUser.uid, username: userProfileData.username, hand: generateRandomHand() };
         updatePayload.status = "waiting";
+        updatePayload.lastActive = Date.now();
       } else if (!roomData.player2 && roomData.player1.uid !== currentUser.uid) {
         updatePayload.player2 = { uid: currentUser.uid, username: userProfileData.username, hand: generateRandomHand() };
         updatePayload.status = "playing";
-        updatePayload.turn = roomData.player1.uid; // Comincia player1
+        updatePayload.turn = roomData.player1.uid;
+        updatePayload.lastActive = Date.now();
       } else {
         alert("Impossibile entrare nella stanza.");
         return;
@@ -541,14 +508,15 @@
       await setDoc(roomRef, {
         status: "waiting",
         player1: { uid: currentUser.uid, username: userProfileData.username, hand: generateRandomHand() },
-        player2: null
+        player2: null,
+        lastActive: Date.now()
       });
 
       activeRoomId = code;
       document.getElementById('rooms-view').classList.add('hidden');
       document.getElementById('lobby-view').classList.remove('hidden');
       listenToCurrentRoom(code);
-      alert("Codice stanza: " + code.replace('priv_', ''));
+      alert("Codice stanza privata: " + code.replace('priv_', ''));
     };
 
     window.joinByCode = async function() {
@@ -562,11 +530,25 @@
         if (!docSnap.exists()) return;
         const data = docSnap.data();
 
+        // Se un giocatore è stato espulso per AFK o la stanza è stata resettata
+        if (data.status === "waiting" && (!data.player1 && !data.player2)) {
+          alert("Sei stato rimosso dalla stanza per inattività (AFK).");
+          window.leaveRoom();
+          return;
+        }
+
         const isP1 = data.player1 && data.player1.uid === currentUser.uid;
+        const isP2 = data.player2 && data.player2.uid === currentUser.uid;
+
+        if (!isP1 && !isP2 && activeRoomId) {
+          // Se non siamo più in nessuno dei due slot (espelliti)
+          window.leaveRoom();
+          return;
+        }
+
         const myData = isP1 ? data.player1 : data.player2;
         const enemyData = isP1 ? data.player2 : data.player1;
 
-        // Turno
         const turnBadge = document.getElementById('turn-badge');
         const isMyTurn = data.turn === currentUser.uid;
 
@@ -581,7 +563,6 @@
           turnBadge.className = "turn-indicator";
         }
 
-        // Render Carte
         if (myData) {
           document.getElementById('my-name').innerText = myData.username + " (Tu)";
           renderHand(document.getElementById('my-hand'), myData.hand, true, isMyTurn);
@@ -602,7 +583,6 @@
       hand.forEach((card, index) => {
         const cardEl = document.createElement('div');
         cardEl.className = `game-card ${card.hp <= 0 ? 'dead' : ''}`;
-        
         const hpPercent = Math.max(0, (card.hp / card.maxHp) * 100);
 
         cardEl.innerHTML = `
@@ -639,10 +619,10 @@
 
       if (!enemyData || !enemyData.hand) return;
 
-      // Trova la prima carta viva dell'avversario
       const enemyCardIndex = enemyData.hand.findIndex(c => c.hp > 0);
       if (enemyCardIndex === -1) {
-        alert("L'avversario non ha più carte attive!");
+        alert("Hai vinto la partita!");
+        window.leaveRoom();
         return;
       }
 
@@ -652,14 +632,11 @@
       if (type === 'attack') {
         damage = myCard.attack;
       } else if (type === 'ability') {
-        damage = myCard.abilityDamage;
+        damage = cardIdIsAutomoderator(myCard) ? enemyData.hand[enemyCardIndex].hp : myCard.abilityDamage;
         myCard.abilityUsed = true;
       }
 
-      // Applica danno
       enemyData.hand[enemyCardIndex].hp -= damage;
-
-      // Cambia turno
       const nextTurn = enemyData.uid;
 
       const updatePayload = {};
@@ -671,15 +648,45 @@
         updatePayload.player1 = enemyData;
       }
       updatePayload.turn = nextTurn;
+      updatePayload.lastActive = Date.now(); // Aggiorna il timer di attività
 
       await updateDoc(roomRef, updatePayload);
     };
 
+    function cardIdIsAutomoderator(card) {
+      return card.cardId === "automoderator";
+    }
+
     window.leaveRoom = async function() {
+      if (activeRoomId && currentUser) {
+        const roomRef = doc(db, "rooms", activeRoomId);
+        const roomSnap = await getDoc(roomRef);
+        if (roomSnap.exists()) {
+          const data = roomSnap.data();
+          const updatePayload = {};
+
+          if (data.player1 && data.player1.uid === currentUser.uid) updatePayload.player1 = null;
+          if (data.player2 && data.player2.uid === currentUser.uid) updatePayload.player2 = null;
+
+          updatePayload.status = "waiting";
+          updatePayload.turn = null;
+          updatePayload.lastActive = null;
+
+          await updateDoc(roomRef, updatePayload);
+        }
+      }
+
       if (unsubscribeRoomListener) unsubscribeRoomListener();
+      activeRoomId = null;
       document.getElementById('lobby-view').classList.add('hidden');
       document.getElementById('rooms-view').classList.remove('hidden');
     };
+
+    window.addEventListener('beforeunload', () => {
+      if (activeRoomId) {
+        window.leaveRoom();
+      }
+    });
   </script>
 </body>
 </html>
