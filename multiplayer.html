@@ -145,6 +145,24 @@
       margin-bottom: 12px;
     }
 
+    /* PULSANTE ADMIN */
+    .btn-admin-reset {
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px dashed #ef4444;
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 15px;
+      transition: background 0.2s;
+    }
+
+    .btn-admin-reset:hover {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
     /* VISTA CAMPO DI BATTAGLIA */
     .turn-indicator {
       display: inline-block;
@@ -301,6 +319,9 @@
       <h1>Stanze Multiplayer</h1>
       <p class="subtitle">Scegli una stanza pubblica o crea una partita privata!</p>
 
+      <!-- PULSANTE ADMIN (Visibile solo agli UID autorizzati) -->
+      <button id="admin-reset-btn" class="btn-admin-reset hidden" onclick="adminResetAllRooms()">🛡️ [ADMIN] Svuota Tutte le Stanze</button>
+
       <div class="rooms-grid" id="rooms-list">
         <p style="color: #94a3b8;">Caricamento stanze in corso...</p>
       </div>
@@ -355,8 +376,15 @@
       getDoc, 
       setDoc, 
       updateDoc, 
-      onSnapshot 
+      onSnapshot,
+      getDocs 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // LISTA UID AMMINISTRATORI
+    const ADMIN_UIDS = [
+      "hObA3vADPIfO0VDuaERwjFFzx303",
+      "LRS2V4mx1kOKGZl65J1DYzqRX9q1"
+    ];
 
     const teenCardsArchive = {
       "frontealpino": { name: "Fronte Alpino", image: "frontealpino.png", hp: 80, maxHp: 80, attack: { damage: 10 }, ability: { name: "Abilità", damage: 20 } },
@@ -387,6 +415,12 @@
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUser = user;
+        
+        // Controlla se l'utente è un amministratore autorizzato
+        if (ADMIN_UIDS.includes(user.uid)) {
+          document.getElementById('admin-reset-btn').classList.remove('hidden');
+        }
+
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           userProfileData.username = userDoc.data().username || user.email.split('@')[0];
@@ -399,6 +433,45 @@
         window.location.href = "account.html";
       }
     });
+
+    // FUNZIONE ADMIN: Svuota tutte le stanze su Firestore
+    window.adminResetAllRooms = async function() {
+      if (!currentUser || !ADMIN_UIDS.includes(currentUser.uid)) return;
+
+      if (!confirm("Sei sicuro di voler svuotare e azzerare tutte le stanze di gioco?")) return;
+
+      try {
+        const querySnapshot = await getDocs(collection(db, "rooms"));
+        const updatePromises = querySnapshot.docs.map(async (roomDoc) => {
+          const roomRef = doc(db, "rooms", roomDoc.id);
+          // Se è una stanza privata (inizia con priv_), la eliminiamo o la azzeriamo. Per le stanze pubbliche le azzeriamo.
+          if (roomDoc.id.startsWith('stanza_')) {
+            return updateDoc(roomRef, {
+              status: "waiting",
+              player1: null,
+              player2: null,
+              turn: null,
+              lastActive: null
+            });
+          } else {
+            // Per le stanze private si possono azzerare o rimuovere
+            return updateDoc(roomRef, {
+              status: "waiting",
+              player1: null,
+              player2: null,
+              turn: null,
+              lastActive: null
+            });
+          }
+        });
+
+        await Promise.all(updatePromises);
+        alert("Tutte le stanze sono state svuotate con successo!");
+      } catch (err) {
+        console.error("Errore durante il reset:", err);
+        alert("Errore durante il reset delle stanze.");
+      }
+    };
 
     function generateRandomHand() {
       const keys = Object.keys(teenCardsArchive);
@@ -434,7 +507,6 @@
           const roomId = docSnap.id;
           const roomData = docSnap.data();
 
-          // Controllo AFK / Inattività superiore a 2 minuti
           if (roomData.lastActive && (now - roomData.lastActive > twoMinutes)) {
             await updateDoc(doc(db, "rooms", roomId), {
               status: "waiting",
@@ -530,9 +602,8 @@
         if (!docSnap.exists()) return;
         const data = docSnap.data();
 
-        // Se un giocatore è stato espulso per AFK o la stanza è stata resettata
         if (data.status === "waiting" && (!data.player1 && !data.player2)) {
-          alert("Sei stato rimosso dalla stanza per inattività (AFK).");
+          alert("Sei stato rimosso dalla stanza per inattività o reset amministrativo.");
           window.leaveRoom();
           return;
         }
@@ -541,7 +612,6 @@
         const isP2 = data.player2 && data.player2.uid === currentUser.uid;
 
         if (!isP1 && !isP2 && activeRoomId) {
-          // Se non siamo più in nessuno dei due slot (espelliti)
           window.leaveRoom();
           return;
         }
@@ -648,7 +718,7 @@
         updatePayload.player1 = enemyData;
       }
       updatePayload.turn = nextTurn;
-      updatePayload.lastActive = Date.now(); // Aggiorna il timer di attività
+      updatePayload.lastActive = Date.now();
 
       await updateDoc(roomRef, updatePayload);
     };
