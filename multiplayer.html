@@ -84,6 +84,10 @@
       align-items: center;
     }
 
+    .room-info {
+      text-align: left;
+    }
+
     .room-title {
       font-weight: bold;
       font-size: 1rem;
@@ -93,6 +97,11 @@
     .room-status {
       font-size: 0.8rem;
       color: #94a3b8;
+    }
+
+    .room-actions {
+      display: flex;
+      gap: 8px;
     }
 
     .btn-join {
@@ -109,6 +118,22 @@
       background: #475569 !important;
       cursor: not-allowed;
       opacity: 0.6;
+    }
+
+    /* PULSANTE ADMIN SINGOLA STANZA */
+    .btn-admin-single-reset {
+      padding: 8px 12px;
+      border-radius: 20px;
+      border: 1px solid #ef4444;
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-admin-single-reset:hover {
+      background: rgba(239, 68, 68, 0.4);
     }
 
     .private-section {
@@ -145,7 +170,7 @@
       margin-bottom: 12px;
     }
 
-    /* PULSANTE ADMIN */
+    /* PULSANTE ADMIN GLOBALE */
     .btn-admin-reset {
       width: 100%;
       padding: 10px;
@@ -156,11 +181,6 @@
       font-weight: 600;
       cursor: pointer;
       margin-bottom: 15px;
-      transition: background 0.2s;
-    }
-
-    .btn-admin-reset:hover {
-      background: rgba(239, 68, 68, 0.3);
     }
 
     /* VISTA CAMPO DI BATTAGLIA */
@@ -319,7 +339,7 @@
       <h1>Stanze Multiplayer</h1>
       <p class="subtitle">Scegli una stanza pubblica o crea una partita privata!</p>
 
-      <!-- PULSANTE ADMIN (Visibile solo agli UID autorizzati) -->
+      <!-- PULSANTE ADMIN GLOBALE -->
       <button id="admin-reset-btn" class="btn-admin-reset hidden" onclick="adminResetAllRooms()">🛡️ [ADMIN] Svuota Tutte le Stanze</button>
 
       <div class="rooms-grid" id="rooms-list">
@@ -380,11 +400,14 @@
       getDocs 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // LISTA UID AMMINISTRATORI
+    // LISTA UID AMMINISTRATORI AGGIORNATA
     const ADMIN_UIDS = [
       "hObA3vADPIfO0VDuaERwjFFzx303",
-      "LRS2V4mx1kOKGZl65J1DYzqRX9q1"
+      "LRS2V4mx1kOKGZl65J1DYzqRX9q1",
+      "vaUTilhimXfpcPuhFM1z2llA9mZ2"
     ];
+
+    let isAdmin = false;
 
     const teenCardsArchive = {
       "frontealpino": { name: "Fronte Alpino", image: "frontealpino.png", hp: 80, maxHp: 80, attack: { damage: 10 }, ability: { name: "Abilità", damage: 20 } },
@@ -416,8 +439,8 @@
       if (user) {
         currentUser = user;
         
-        // Controlla se l'utente è un amministratore autorizzato
         if (ADMIN_UIDS.includes(user.uid)) {
+          isAdmin = true;
           document.getElementById('admin-reset-btn').classList.remove('hidden');
         }
 
@@ -434,42 +457,47 @@
       }
     });
 
-    // FUNZIONE ADMIN: Svuota tutte le stanze su Firestore
-    window.adminResetAllRooms = async function() {
-      if (!currentUser || !ADMIN_UIDS.includes(currentUser.uid)) return;
+    // Svuota una singola stanza
+    window.adminResetSingleRoom = async function(roomId, e) {
+      e.stopPropagation();
+      if (!currentUser || !isAdmin) return;
 
-      if (!confirm("Sei sicuro di voler svuotare e azzerare tutte le stanze di gioco?")) return;
+      if (!confirm(`Vuoi svuotare la ${roomId.replace('stanza_', 'Stanza ').toUpperCase()}?`)) return;
+
+      try {
+        await updateDoc(doc(db, "rooms", roomId), {
+          status: "waiting",
+          player1: null,
+          player2: null,
+          turn: null,
+          lastActive: null
+        });
+        alert("Stanza svuotata con successo!");
+      } catch (err) {
+        console.error("Errore:", err);
+        alert("Errore durante lo svuotamento della stanza.");
+      }
+    };
+
+    window.adminResetAllRooms = async function() {
+      if (!currentUser || !isAdmin) return;
+      if (!confirm("Sei sicuro di voler svuotare tutte le stanze?")) return;
 
       try {
         const querySnapshot = await getDocs(collection(db, "rooms"));
-        const updatePromises = querySnapshot.docs.map(async (roomDoc) => {
-          const roomRef = doc(db, "rooms", roomDoc.id);
-          // Se è una stanza privata (inizia con priv_), la eliminiamo o la azzeriamo. Per le stanze pubbliche le azzeriamo.
-          if (roomDoc.id.startsWith('stanza_')) {
-            return updateDoc(roomRef, {
-              status: "waiting",
-              player1: null,
-              player2: null,
-              turn: null,
-              lastActive: null
-            });
-          } else {
-            // Per le stanze private si possono azzerare o rimuovere
-            return updateDoc(roomRef, {
-              status: "waiting",
-              player1: null,
-              player2: null,
-              turn: null,
-              lastActive: null
-            });
-          }
-        });
-
-        await Promise.all(updatePromises);
-        alert("Tutte le stanze sono state svuotate con successo!");
+        const promises = querySnapshot.docs.map(roomDoc => 
+          updateDoc(doc(db, "rooms", roomDoc.id), {
+            status: "waiting",
+            player1: null,
+            player2: null,
+            turn: null,
+            lastActive: null
+          })
+        );
+        await Promise.all(promises);
+        alert("Tutte le stanze sono state svuotate!");
       } catch (err) {
-        console.error("Errore durante il reset:", err);
-        alert("Errore durante il reset delle stanze.");
+        console.error("Errore:", err);
       }
     };
 
@@ -526,15 +554,19 @@
             const isFull = count >= 2;
             const roomCard = document.createElement('div');
             roomCard.className = 'room-card';
+            
             roomCard.innerHTML = `
               <div class="room-info">
                 <div class="room-title">${roomId.replace('stanza_', 'Stanza ').toUpperCase()}</div>
                 <div class="room-status">${count}/2 Giocatori</div>
               </div>
-              <button class="btn-join ${isFull ? 'btn-disabled' : ''}" 
-                      onclick="joinRoom('${roomId}')" ${isFull ? 'disabled' : ''}>
-                ${isFull ? 'Piena' : 'Entra'}
-              </button>
+              <div class="room-actions">
+                ${isAdmin ? `<button class="btn-admin-single-reset" onclick="adminResetSingleRoom('${roomId}', event)">Svuota</button>` : ''}
+                <button class="btn-join ${isFull ? 'btn-disabled' : ''}" 
+                        onclick="joinRoom('${roomId}')" ${isFull ? 'disabled' : ''}>
+                  ${isFull ? 'Piena' : 'Entra'}
+                </button>
+              </div>
             `;
             roomsListEl.appendChild(roomCard);
           }
@@ -603,7 +635,7 @@
         const data = docSnap.data();
 
         if (data.status === "waiting" && (!data.player1 && !data.player2)) {
-          alert("Sei stato rimosso dalla stanza per inattività o reset amministrativo.");
+          alert("La stanza è stata svuotata.");
           window.leaveRoom();
           return;
         }
