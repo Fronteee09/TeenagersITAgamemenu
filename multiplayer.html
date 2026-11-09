@@ -21,7 +21,6 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      /* SFONDO AGGIORNATO A sfondohome.png */
       background: #090e18 url('sfondohome.png') no-repeat center center fixed;
       background-size: cover;
       color: #ffffff;
@@ -374,6 +373,7 @@
 
     <!-- VISTA 2: CAMPO DI BATTAGLIA -->
     <div id="lobby-view" class="hidden">
+      <!-- TITOLO AGGIORNATO CON ID STANZA -->
       <h1 id="current-room-title">Partita Multiplayer</h1>
       <div id="turn-badge" class="turn-indicator">In attesa dell'avversario...</div>
 
@@ -620,6 +620,9 @@
       await updateDoc(roomRef, updatePayload);
       activeRoomId = roomId;
 
+      // Mostra il codice o il nome della stanza nel titolo della lobby
+      updateRoomTitleDisplay(roomId);
+
       document.getElementById('rooms-view').classList.add('hidden');
       document.getElementById('lobby-view').classList.remove('hidden');
       listenToCurrentRoom(roomId);
@@ -638,10 +641,13 @@
       });
 
       activeRoomId = code;
+      
+      // Mostra il codice privato nel titolo della lobby
+      updateRoomTitleDisplay(code);
+
       document.getElementById('rooms-view').classList.add('hidden');
       document.getElementById('lobby-view').classList.remove('hidden');
       listenToCurrentRoom(code);
-      alert("Codice stanza privata: " + code.replace('priv_', ''));
     };
 
     window.joinByCode = async function() {
@@ -649,7 +655,18 @@
       if (code) window.joinRoom("priv_" + code.replace("PRIV_", ""));
     };
 
+    function updateRoomTitleDisplay(roomId) {
+      const titleEl = document.getElementById('current-room-title');
+      if (roomId.startsWith('priv_')) {
+        const cleanCode = roomId.replace('priv_', '');
+        titleEl.innerText = `Partita Privata (Codice: ${cleanCode})`;
+      } else {
+        titleEl.innerText = roomId.replace('stanza_', 'Stanza ').toUpperCase();
+      }
+    }
+
     function listenToCurrentRoom(roomId) {
+      updateRoomTitleDisplay(roomId);
       const roomRef = doc(db, "rooms", roomId);
       unsubscribeRoomListener = onSnapshot(roomRef, (docSnap) => {
         if (!docSnap.exists()) return;
