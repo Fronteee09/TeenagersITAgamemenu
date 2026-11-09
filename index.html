@@ -157,7 +157,7 @@
     <div class="btn-group">
       <a href="multiplayer.html" class="btn">Multiplayer (Stanze)</a>
       <a href="account.html" class="btn btn-secondary">Profilo / Account</a>
-      <a href="#" class="btn btn-secondary">Gioca contro il Bot</a>
+      <a href="bot.html" class="btn btn-secondary">Gioca contro il Bot</a>
     </div>
 
     <div class="credits">
@@ -166,7 +166,6 @@
   </div>
 
   <script>
-    // Recupera il livello dal localStorage (default 1) e imposta l'icona dinamica
     const userLevel = localStorage.getItem('user_level') || 1;
     const levelImg = document.getElementById('level-img');
     levelImg.src = `${userLevel}.png`;
