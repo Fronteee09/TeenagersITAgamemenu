@@ -36,6 +36,7 @@
       height: 100%;
       background: rgba(5, 10, 20, 0.65);
       backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       z-index: 1;
     }
 
@@ -51,6 +52,7 @@
       padding: 35px 25px;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
       backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       text-align: center;
     }
 
@@ -129,6 +131,31 @@
       background: rgba(255, 255, 255, 0.08);
     }
 
+    /* MODALE PROPOSTA CARTA */
+    .modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex; justify-content: center; align-items: center;
+      z-index: 10;
+    }
+    .modal.hidden { display: none; }
+    .modal-content {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      padding: 25px;
+      width: 90%; max-width: 400px;
+      text-align: center;
+    }
+    .modal-input {
+      width: 100%; padding: 11px 15px; margin-bottom: 12px;
+      border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(30, 41, 59, 0.7); color: #fff; outline: none;
+      font-size: 0.9rem;
+    }
+    .modal-btns { display: flex; gap: 10px; margin-top: 15px; }
+
     .credits {
       margin-top: 25px;
       padding-top: 15px;
@@ -156,8 +183,9 @@
 
     <div class="btn-group">
       <a href="multiplayer.html" class="btn">Multiplayer (Stanze)</a>
-      <a href="account.html" class="btn btn-secondary">Profilo / Account</a>
       <a href="bot.html" class="btn btn-secondary">Gioca contro il Bot</a>
+      <a href="account.html" class="btn btn-secondary">Profilo / Account</a>
+      <button class="btn btn-secondary" onclick="openCardModal()">✨ Proponi una Carta</button>
     </div>
 
     <div class="credits">
@@ -165,11 +193,104 @@
     </div>
   </div>
 
-  <script>
-    const userLevel = localStorage.getItem('user_level') || 1;
-    const levelImg = document.getElementById('level-img');
-    levelImg.src = `${userLevel}.png`;
-    levelImg.alt = `Livello ${userLevel}`;
+  <!-- MODALE PER PROPORRE UNA CARTA -->
+  <div id="card-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 8px;">Proponi la tua Carta</h3>
+      <p style="margin-bottom: 15px; font-size: 0.85rem;">Invia la tua idea agli admin inserendo i dettagli e il tuo username Reddit.</p>
+      
+      <form id="card-proposal-form" onsubmit="submitCardProposal(event)">
+        <input type="text" id="prop-reddit" placeholder="Username Reddit (es. u/TuoNome)" required class="modal-input">
+        <input type="text" id="prop-cardname" placeholder="Nome della Carta" required class="modal-input">
+        <input type="text" id="prop-ability" placeholder="Nome e Danni Abilità" required class="modal-input">
+        <input type="number" id="prop-hp" placeholder="HP massimi (es. 80)" required class="modal-input">
+        
+        <div class="modal-btns">
+          <button type="submit" class="btn">Invia</button>
+          <button type="button" class="btn btn-secondary" onclick="closeCardModal()">Annulla</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FIREBASE & LOGICA -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCqjJNoMeliQskPzlMAGOqeF_-aFZuksY",
+      authDomain: "teenagersita-cards.firebaseapp.com",
+      projectId: "teenagersita-cards",
+      storageBucket: "teenagersita-cards.firebasestorage.app",
+      messagingSenderId: "651917703980",
+      appId: "1:651917703980:web:d4c8f87b4645e97c46ca89"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Gestione icona livello in base all'utente loggato su Firestore / localStorage
+    onAuthStateChanged(auth, async (user) => {
+      let level = 1;
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists() && userDoc.data().level) {
+            level = userDoc.data().level;
+          }
+        } catch (e) {
+          console.error("Errore recupero livello:", e);
+        }
+      } else {
+        level = localStorage.getItem('user_level') || 1;
+      }
+
+      const levelImg = document.getElementById('level-img');
+      levelImg.src = `${level}.png`;
+      levelImg.alt = `Livello ${level}`;
+    });
+
+    // Funzioni Modale Proposta Carta
+    window.openCardModal = function() {
+      document.getElementById('card-modal').classList.remove('hidden');
+    }
+
+    window.closeCardModal = function() {
+      document.getElementById('card-modal').classList.add('hidden');
+    }
+
+    // Invio proposta su Firestore
+    window.submitCardProposal = async function(event) {
+      event.preventDefault();
+      const user = auth.currentUser;
+
+      const redditUser = document.getElementById('prop-reddit').value.trim();
+      const cardName = document.getElementById('prop-cardname').value.trim();
+      const ability = document.getElementById('prop-ability').value.trim();
+      const hp = document.getElementById('prop-hp').value.trim();
+
+      try {
+        await addDoc(collection(db, "cardProposals"), {
+          userUid: user ? user.uid : "anonimo",
+          userEmail: user ? user.email : "non specificata",
+          redditUsername: redditUser,
+          cardName: cardName,
+          ability: ability,
+          hp: hp,
+          timestamp: Date.now()
+        });
+
+        alert("Proposta inviata con successo agli amministratori!");
+        closeCardModal();
+        document.getElementById('card-proposal-form').reset();
+      } catch (err) {
+        console.error("Errore invio proposta:", err);
+        alert("Errore durante l'invio della proposta. Assicurati di aver effettuato l'accesso.");
+      }
+    };
   </script>
 
 </body>
