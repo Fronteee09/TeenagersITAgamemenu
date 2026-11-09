@@ -251,6 +251,18 @@
       pointer-events: none;
     }
 
+    .game-card.targetable {
+      border: 2px dashed #f59e0b;
+      cursor: pointer;
+      animation: pulse-border 1.5s infinite;
+    }
+
+    @keyframes pulse-border {
+      0% { border-color: #f59e0b; }
+      50% { border-color: #ef4444; }
+      100% { border-color: #f59e0b; }
+    }
+
     .game-card img {
       width: 60px;
       height: 60px;
@@ -339,7 +351,6 @@
       <h1>Stanze Multiplayer</h1>
       <p class="subtitle">Scegli una stanza pubblica o crea una partita privata!</p>
 
-      <!-- PULSANTE ADMIN GLOBALE -->
       <button id="admin-reset-btn" class="btn-admin-reset hidden" onclick="adminResetAllRooms()">🛡️ [ADMIN] Svuota Tutte le Stanze</button>
 
       <div class="rooms-grid" id="rooms-list">
@@ -400,7 +411,6 @@
       getDocs 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // LISTA UID AMMINISTRATORI AGGIORNATA
     const ADMIN_UIDS = [
       "hObA3vADPIfO0VDuaERwjFFzx303",
       "LRS2V4mx1kOKGZl65J1DYzqRX9q1",
@@ -409,12 +419,15 @@
 
     let isAdmin = false;
 
+    // ARCHIVIO AGGIORNATO CON TUTTE LE CARTE
     const teenCardsArchive = {
       "frontealpino": { name: "Fronte Alpino", image: "frontealpino.png", hp: 80, maxHp: 80, attack: { damage: 10 }, ability: { name: "Abilità", damage: 20 } },
       "clipp3r": { name: "Clipp3r", image: "clipp3r.png", hp: 80, maxHp: 80, attack: { damage: 15 }, ability: { name: "Sketchbook", damage: 30 } },
       "fronte": { name: "Fronte", image: "fronte.png", hp: 100, maxHp: 100, attack: { damage: 15 }, ability: { name: "Bombardata", damage: 60 } },
       "aspro": { name: "Aspro", image: "aspro.png", hp: 100, maxHp: 100, attack: { damage: 20 }, ability: { name: "Aspro", damage: 50 } },
-      "automoderator": { name: "Automoderator", image: "automoderator.png", hp: 40, maxHp: 40, attack: { damage: 10 }, ability: { name: "Ban", damage: 999 } }
+      "automoderator": { name: "Automoderator", image: "automoderator.png", hp: 40, maxHp: 40, attack: { damage: 10 }, ability: { name: "Ban", damage: 999 } },
+      "illuminick138": { name: "Illuminick138", image: "illuminick138.png", hp: 80, maxHp: 80, attack: { damage: 15 }, ability: { name: "Attacco Psicoanalitico", damage: 50, heal: 10 } },
+      "nannikart60peironi": { name: "Nannikart60Peironi", image: "nannikart60peironi.png", hp: 80, maxHp: 80, attack: { damage: 15 }, ability: { name: "Forbici Razzo", damage: 69 }, ability2: { name: "Fagioli", damage: 40 } }
     };
 
     const firebaseConfig = {
@@ -434,6 +447,10 @@
     let userProfileData = { username: "Giocatore", photoURL: "logo.png" };
     let activeRoomId = null;
     let unsubscribeRoomListener = null;
+
+    let selectedAttackerIndex = null;
+    let selectedMoveType = null; // 'attack', 'ability', 'ability2'
+    let targetingMode = false;
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -457,11 +474,9 @@
       }
     });
 
-    // Svuota una singola stanza
     window.adminResetSingleRoom = async function(roomId, e) {
       e.stopPropagation();
       if (!currentUser || !isAdmin) return;
-
       if (!confirm(`Vuoi svuotare la ${roomId.replace('stanza_', 'Stanza ').toUpperCase()}?`)) return;
 
       try {
@@ -475,7 +490,6 @@
         alert("Stanza svuotata con successo!");
       } catch (err) {
         console.error("Errore:", err);
-        alert("Errore durante lo svuotamento della stanza.");
       }
     };
 
@@ -517,7 +531,11 @@
           attack: card.attack.damage,
           abilityDamage: card.ability.damage,
           abilityName: card.ability.name,
-          abilityUsed: false
+          abilityHeal: card.ability.heal || 0,
+          abilityUsed: false,
+          ability2Name: card.ability2 ? card.ability2.name : null,
+          ability2Damage: card.ability2 ? card.ability2.damage : null,
+          ability2Used: false
         });
       }
       return hand;
@@ -657,12 +675,19 @@
         if (data.status === "waiting") {
           turnBadge.innerText = "In attesa dell'avversario...";
           turnBadge.className = "turn-indicator";
+          targetingMode = false;
         } else if (isMyTurn) {
-          turnBadge.innerText = "È IL TUO TURNO!";
-          turnBadge.className = "turn-indicator my-turn";
+          if (targetingMode) {
+            turnBadge.innerText = "🎯 CLICCA SUL BERSAGLIO!";
+            turnBadge.className = "turn-indicator my-turn";
+          } else {
+            turnBadge.innerText = "È IL TUO TURNO! Scegli una mossa";
+            turnBadge.className = "turn-indicator my-turn";
+          }
         } else {
           turnBadge.innerText = "Turno dell'avversario...";
           turnBadge.className = "turn-indicator";
+          targetingMode = false;
         }
 
         if (myData) {
@@ -684,29 +709,65 @@
 
       hand.forEach((card, index) => {
         const cardEl = document.createElement('div');
-        cardEl.className = `game-card ${card.hp <= 0 ? 'dead' : ''}`;
+        let cardClasses = `game-card ${card.hp <= 0 ? 'dead' : ''}`;
+
+        if (targetingMode && !isMine && card.hp > 0) {
+          cardClasses += " targetable";
+        }
+
+        cardEl.className = cardClasses;
         const hpPercent = Math.max(0, (card.hp / card.maxHp) * 100);
 
-        cardEl.innerHTML = `
+        let htmlContent = `
           <img src="${card.image}" alt="${card.name}">
           <div class="card-name">${card.name}</div>
           <div class="hp-bar-container">
             <div class="hp-bar-fill" style="width: ${hpPercent}%"></div>
           </div>
           <div class="hp-text">${Math.max(0, card.hp)} / ${card.maxHp} HP</div>
-          ${isMine && card.hp > 0 ? `
-            <div class="card-actions">
-              <button class="act-btn act-attack" ${!isMyTurn ? 'disabled' : ''} onclick="executeMove(${index}, 'attack')">Attacca (${card.attack})</button>
-              <button class="act-btn act-ability" ${!isMyTurn || card.abilityUsed ? 'disabled' : ''} onclick="executeMove(${index}, 'ability')">${card.abilityName}</button>
-            </div>
-          ` : ''}
         `;
+
+        if (isMine && card.hp > 0) {
+          htmlContent += `
+            <div class="card-actions">
+              <button class="act-btn act-attack" ${!isMyTurn || targetingMode ? 'disabled' : ''} onclick="prepareMove(${index}, 'attack')">Attacca (${card.attack})</button>
+              <button class="act-btn act-ability" ${!isMyTurn || card.abilityUsed || targetingMode ? 'disabled' : ''} onclick="prepareMove(${index}, 'ability')">${card.abilityName}</button>
+              ${card.ability2Name ? `<button class="act-btn act-ability" ${!isMyTurn || card.ability2Used || targetingMode ? 'disabled' : ''} onclick="prepareMove(${index}, 'ability2')">${card.ability2Name}</button>` : ''}
+            </div>
+          `;
+        }
+
+        cardEl.innerHTML = htmlContent;
+
+        if (targetingMode && !isMine && card.hp > 0) {
+          cardEl.onclick = () => executeMove(index);
+        }
+
         container.appendChild(cardEl);
       });
     }
 
-    window.executeMove = async function(cardIndex, type) {
-      if (!activeRoomId || !currentUser) return;
+    window.prepareMove = function(cardIndex, type) {
+      selectedAttackerIndex = cardIndex;
+      selectedMoveType = type;
+      targetingMode = true;
+
+      const turnBadge = document.getElementById('turn-badge');
+      turnBadge.innerText = "🎯 Scegli quale carta dell'avversario colpire!";
+      turnBadge.className = "turn-indicator my-turn";
+
+      const roomRef = doc(db, "rooms", activeRoomId);
+      getDoc(roomRef).then(docSnap => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const isP1 = data.player1.uid === currentUser.uid;
+          renderHand(document.getElementById('enemy-hand'), isP1 ? data.player2.hand : data.player1.hand, false, true);
+        }
+      });
+    };
+
+    window.executeMove = async function(targetCardIndex) {
+      if (!activeRoomId || !currentUser || !targetingMode) return;
 
       const roomRef = doc(db, "rooms", activeRoomId);
       const roomSnap = await getDoc(roomRef);
@@ -719,26 +780,43 @@
       const myData = isP1 ? data.player1 : data.player2;
       const enemyData = isP1 ? data.player2 : data.player1;
 
-      if (!enemyData || !enemyData.hand) return;
+      if (!enemyData || !enemyData.hand[targetCardIndex] || enemyData.hand[targetCardIndex].hp <= 0) {
+        alert("Bersaglio non valido o già eliminato!");
+        targetingMode = false;
+        return;
+      }
 
-      const enemyCardIndex = enemyData.hand.findIndex(c => c.hp > 0);
-      if (enemyCardIndex === -1) {
-        alert("Hai vinto la partita!");
+      const myCard = myData.hand[selectedAttackerIndex];
+      let damage = 0;
+
+      if (selectedMoveType === 'attack') {
+        damage = myCard.attack;
+      } else if (selectedMoveType === 'ability') {
+        damage = cardIdIsAutomoderator(myCard) ? enemyData.hand[targetCardIndex].hp : myCard.abilityDamage;
+        myCard.abilityUsed = true;
+
+        // Se usa l'abilità di Illuminick138, aggiunge 10 HP a una carta alleata a scelta
+        if (myCard.cardId === "illuminick138" && myCard.abilityHeal > 0) {
+          const aliveAllies = myData.hand.filter(c => c.hp > 0 && c.hp < c.maxHp);
+          if (aliveAllies.length > 0) {
+            aliveAllies[0].hp = Math.min(aliveAllies[0].maxHp, aliveAllies[0].hp + myCard.abilityHeal);
+          }
+        }
+      } else if (selectedMoveType === 'ability2') {
+        damage = myCard.ability2Damage;
+        myCard.ability2Used = true;
+      }
+
+      enemyData.hand[targetCardIndex].hp -= damage;
+      targetingMode = false;
+
+      const hasEnemyAlive = enemyData.hand.some(c => c.hp > 0);
+      if (!hasEnemyAlive) {
+        alert("Complimenti! Hai eliminato tutte le carte dell'avversario e hai vinto la partita!");
         window.leaveRoom();
         return;
       }
 
-      const myCard = myData.hand[cardIndex];
-      let damage = 0;
-
-      if (type === 'attack') {
-        damage = myCard.attack;
-      } else if (type === 'ability') {
-        damage = cardIdIsAutomoderator(myCard) ? enemyData.hand[enemyCardIndex].hp : myCard.abilityDamage;
-        myCard.abilityUsed = true;
-      }
-
-      enemyData.hand[enemyCardIndex].hp -= damage;
       const nextTurn = enemyData.uid;
 
       const updatePayload = {};
@@ -760,6 +838,7 @@
     }
 
     window.leaveRoom = async function() {
+      targetingMode = false;
       if (activeRoomId && currentUser) {
         const roomRef = doc(db, "rooms", activeRoomId);
         const roomSnap = await getDoc(roomRef);
