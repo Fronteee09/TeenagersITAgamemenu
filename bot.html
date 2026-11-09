@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gioca contro il Bot - TeenagersITA Cards</title>
+
+  <!-- FAVICON -->
+  <link rel="icon" type="image/png" href="logo.png">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #090e18 url('sfondohome.png') no-repeat center center fixed;
+      background-size: cover;
+      color: #ffffff;
+      padding: 15px;
+    }
+
+    .bg-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 10, 20, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1;
+    }
+
+    .main-container {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 900px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+
+    /* MENU INIZIALE BOT */
+    .bot-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+      padding: 20px 0;
+    }
+
+    .btn-start-bot {
+      padding: 12px 30px;
+      border-radius: 25px;
+      border: none;
+      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+      color: #fff;
+      font-weight: bold;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .btn-start-bot:hover {
+      transform: scale(1.05);
+    }
+
+    /* CAMPO DI BATTAGLIA */
+    .turn-indicator {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid #3b82f6;
+      color: #60a5fa;
+    }
+
+    .turn-indicator.my-turn {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: #22c55e;
+      color: #4ade80;
+    }
+
+    .battle-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .player-section {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 15px;
+    }
+
+    .player-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .player-avatar {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+    }
+
+    .cards-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .game-card {
+      background: rgba(15, 23, 42, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .game-card.dead {
+      opacity: 0.3;
+      filter: grayscale(100%);
+      pointer-events: none;
+    }
+
+    .game-card.targetable {
+      border: 2px dashed #f59e0b;
+      cursor: pointer;
+      animation: pulse-border 1.5s infinite;
+    }
+
+    @keyframes pulse-border {
+      0% { border-color: #f59e0b; }
+      50% { border-color: #ef4444; }
+      100% { border-color: #f59e0b; }
+    }
+
+    .game-card img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      margin-bottom: 5px;
+    }
+
+    .card-name {
+      font-size: 0.85rem;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .hp-bar-container {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
+    .hp-bar-fill {
+      height: 100%;
+      background: #22c55e;
+      width: 100%;
+      transition: width 0.3s;
+    }
+
+    .hp-text {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+
+    .card-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+    }
+
+    .act-btn {
+      padding: 5px;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      color: #fff;
+    }
+
+    .act-attack { background: #eab308; }
+    .act-ability { background: #a855f7; }
+    .act-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .hidden { display: none !important; }
+
+    .btn-leave {
+      background: transparent;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      padding: 8px 18px;
+      border-radius: 20px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-overlay"></div>
+
+  <div class="main-container">
+    
+    <!-- MENU INIZIALE -->
+    <div id="menu-view">
+      <h1>Arena in Solitaria vs Bot</h1>
+      <p class="subtitle">Metti alla prova le tue carte contro il computer!</p>
+      
+      <div class="bot-menu">
+        <button class="btn-start-bot" onclick="startBotGame()">🤖 Inizia Partita vs Bot</button>
+        <a href="index.html" class="back-link">← Torna al Menu Principale</a>
+      </div>
+    </div>
+
+    <!-- CAMPO DI BATTAGLIA -->
+    <div id="battle-view" class="hidden">
+      <h1>Partita vs Bot</h1>
+      <div id="turn-badge" class="turn-indicator">Inizializzazione...</div>
+
+      <div class="battle-grid">
+        <!-- SEZIONE BOT -->
+        <div class="player-section">
+          <div class="player-header">
+            <img src="logo.png" class="player-avatar">
+            <span id="bot-name">Bot (IA)</span>
+          </div>
+          <div id="bot-hand" class="cards-row"></div>
+        </div>
+
+        <!-- SEZIONE GIOCATORE -->
+        <div class="player-section">
+          <div class="player-header">
+            <img src="logo.png" class="player-avatar">
+            <span id="my-name">Tu (Giocatore)</span>
+          </div>
+          <div id="my-hand" class="cards-row"></div>
+        </div>
+      </div>
+
+      <button class="btn-leave" onclick="quitGame()">Abbandona Partita</button>
+    </div>
+
+  </div>
+
+  <script>
+    // ARCHIVIO CARTE COMPLETO
+    const teenCardsArchive = {
+      "frontealpino": { name: "Fronte Alpino", image: "frontealpino.png", hp: 80, maxHp: 80, attack: { damage: 10 }, ability: { name: "Abilità", damage: 20 } },
+      "clipp3r": { name: "Clipp3r", image: "clipp3r.png", hp: 80, maxHp: 80, attack: { damage: 15 }, ability: { name: "Sketchbook", damage: 30 } },
+      "fronte": { name: "Fronte", image: "fronte.png", hp: 100, maxHp: 100, attack: { damage: 15 }, ability: { name: "Bombardata", damage: 60 } },
+      "aspro": { name: "Aspro", image: "aspro.png", hp: 100, maxHp: 100, attack: { damage: 20 }, ability: { name: "Aspro", damage: 50 } },
+      "automoderator": { name: "Automoderator", image: "automoderator.png", hp: 40, maxHp: 40, attack: { damage: 10 }, ability: { name: "Ban", damage: 999 } },
+      "illuminick138": { name: "Illuminick138", image: "illuminick138.png", hp: 80, maxHp: 80, attack: { damage: 15 }, ability: { name: "Attacco Psicoanalitico", damage: 50, heal: 10 } },
+      "nannikart60peironi": { name: "Nannikart60Peironi", image: "nannikart60peironi.png", hp: 80, maxHp: 80, attack: { damage: 15 }, ability: { name: "Forbici Razzo", damage: 69 }, ability2: { name: "Fagioli", damage: 40 } },
+      "batzupper": { name: "Batzupper", image: "batzupper.png", hp: 90, maxHp: 90, attack: { damage: 15 }, ability: { name: "Jetpack Zuppa", damage: 30 }, ability2: { name: "Raggio di Nerd", damage: 60 } }
+    };
+
+    let playerHand = [];
+    let botHand = [];
+    let isMyTurn = true;
+    let targetingMode = false;
+    let selectedAttackerIndex = null;
+    let selectedMoveType = null;
+
+    function generateRandomHand() {
+      const keys = Object.keys(teenCardsArchive);
+      const hand = [];
+      for (let i = 0; i < 4; i++) {
+        const randKey = keys[Math.floor(Math.random() * keys.length)];
+        const card = teenCardsArchive[randKey];
+        hand.push({
+          cardId: randKey,
+          name: card.name,
+          image: card.image,
+          hp: card.hp,
+          maxHp: card.maxHp,
+          attack: card.attack.damage,
+          abilityName: card.ability.name,
+          abilityDamage: card.ability.damage,
+          abilityHeal: card.ability.heal || 0,
+          abilityUsed: false,
+          ability2Name: card.ability2 ? card.ability2.name : null,
+          ability2Damage: card.ability2 ? card.ability2.damage : null,
+          ability2Used: false
+        });
+      }
+      return hand;
+    }
+
+    function startBotGame() {
+      playerHand = generateRandomHand();
+      botHand = generateRandomHand();
+      isMyTurn = true;
+      targetingMode = false;
+
+      document.getElementById('menu-view').classList.add('hidden');
+      document.getElementById('battle-view').classList.remove('hidden');
+      updateUI();
+    }
+
+    function updateUI() {
+      const turnBadge = document.getElementById('turn-badge');
+
+      if (isMyTurn) {
+        if (targetingMode) {
+          turnBadge.innerText = "🎯 CLICCA SUL BERSAGLIO AVVERSARIO!";
+          turnBadge.className = "turn-indicator my-turn";
+        } else {
+          turnBadge.innerText = "È IL TUO TURNO! Scegli una mossa";
+          turnBadge.className = "turn-indicator my-turn";
+        }
+      } else {
+        turnBadge.innerText = "Turno del Bot in corso...";
+        turnBadge.className = "turn-indicator";
+        targetingMode = false;
+      }
+
+      renderHand(document.getElementById('my-hand'), playerHand, true);
+      renderHand(document.getElementById('bot-hand'), botHand, false);
+    }
+
+    function renderHand(container, hand, isMine) {
+      container.innerHTML = "";
+      hand.forEach((card, index) => {
+        const cardEl = document.createElement('div');
+        let cardClasses = `game-card ${card.hp <= 0 ? 'dead' : ''}`;
+
+        if (targetingMode && !isMine && card.hp > 0) {
+          cardClasses += " targetable";
+        }
+
+        cardEl.className = cardClasses;
+        const hpPercent = Math.max(0, (card.hp / card.maxHp) * 100);
+
+        let html = `
+          <img src="${card.image}" alt="${card.name}">
+          <div class="card-name">${card.name}</div>
+          <div class="hp-bar-container">
+            <div class="hp-bar-fill" style="width: ${hpPercent}%"></div>
+          </div>
+          <div class="hp-text">${Math.max(0, card.hp)} / ${card.maxHp} HP</div>
+        `;
+
+        if (isMine && card.hp > 0) {
+          html += `
+            <div class="card-actions">
+              <button class="act-btn act-attack" ${!isMyTurn || targetingMode ? 'disabled' : ''} onclick="prepareMove(${index}, 'attack')">Attacca (${card.attack})</button>
+              <button class="act-btn act-ability" ${!isMyTurn || card.abilityUsed || targetingMode ? 'disabled' : ''} onclick="prepareMove(${index}, 'ability')">${card.abilityName}</button>
+              ${card.ability2Name ? `<button class="act-btn act-ability" ${!isMyTurn || card.ability2Used || targetingMode ? 'disabled' : ''} onclick="prepareMove(${index}, 'ability2')">${card.ability2Name}</button>` : ''}
+            </div>
+          `;
+        }
+
+        cardEl.innerHTML = html;
+
+        if (targetingMode && !isMine && card.hp > 0) {
+          cardEl.onclick = () => executePlayerMove(index);
+        }
+
+        container.appendChild(cardEl);
+      });
+    }
+
+    function prepareMove(cardIndex, type) {
+      if (!isMyTurn) return;
+      selectedAttackerIndex = cardIndex;
+      selectedMoveType = type;
+      targetingMode = true;
+      updateUI();
+    }
+
+    function executePlayerMove(targetIndex) {
+      if (!isMyTurn || !targetingMode) return;
+
+      const attacker = playerHand[selectedAttackerIndex];
+      const target = botHand[targetIndex];
+
+      let damage = 0;
+      if (selectedMoveType === 'attack') {
+        damage = attacker.attack;
+      } else if (selectedMoveType === 'ability') {
+        damage = attacker.cardId === "automoderator" ? target.hp : attacker.abilityDamage;
+        attacker.abilityUsed = true;
+
+        if (attacker.cardId === "illuminick138" && attacker.abilityHeal > 0) {
+          const aliveAllies = playerHand.filter(c => c.hp > 0 && c.hp < c.maxHp);
+          if (aliveAllies.length > 0) {
+            aliveAllies[0].hp = Math.min(aliveAllies[0].maxHp, aliveAllies[0].hp + attacker.abilityHeal);
+          }
+        }
+      } else if (selectedMoveType === 'ability2') {
+        damage = attacker.ability2Damage;
+        attacker.ability2Used = true;
+      }
+
+      target.hp -= damage;
+      targetingMode = false;
+
+      // Controlla se il bot ha perso
+      if (!botHand.some(c => c.hp > 0)) {
+        alert("🎉 Complimenti! Hai sconfitto il Bot!");
+        quitGame();
+        return;
+      }
+
+      // Passa il turno al Bot
+      isMyTurn = false;
+      updateUI();
+      setTimeout(botTurn, 1500); // Ritardo di 1.5 secondi per simulare la mossa del bot
+    }
+
+    // LOGICA DEL BOT (IA BILANCIATA)
+    function botTurn() {
+      const aliveBotCards = botHand.filter(c => c.hp > 0);
+      const alivePlayerCards = playerHand.filter(c => c.hp > 0);
+
+      if (aliveBotCards.length === 0 || alivePlayerCards.length === 0) return;
+
+      // Sceglie una carta viva a caso del bot
+      const botAttacker = aliveBotCards[Math.floor(Math.random() * aliveBotCards.length)];
+      
+      // Sceglie un bersaglio vivo a caso tra le tue carte
+      const targetPlayerCard = alivePlayerCards[Math.floor(Math.random() * alivePlayerCards.length)];
+
+      // Sceglie casualmente il tipo di mossa (Attacco base o abilità se non usata)
+      const availableMoves = ['attack'];
+      if (!botAttacker.abilityUsed) availableMoves.push('ability');
+      if (botAttacker.ability2Name && !botAttacker.ability2Used) availableMoves.push('ability2');
+
+      const chosenMove = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+
+      let damage = 0;
+      if (chosenMove === 'attack') {
+        damage = botAttacker.attack;
+      } else if (chosenMove === 'ability') {
+        damage = botAttacker.cardId === "automoderator" ? targetPlayerCard.hp : botAttacker.abilityDamage;
+        botAttacker.abilityUsed = true;
+      } else if (chosenMove === 'ability2') {
+        damage = botAttacker.ability2Damage;
+        botAttacker.ability2Used = true;
+      }
+
+      targetPlayerCard.hp -= damage;
+
+      // Controlla se il giocatore ha perso
+      if (!playerHand.some(c => c.hp > 0)) {
+        alert("💀 Il Bot ha vinto la partita! Ritenta.");
+        quitGame();
+        return;
+      }
+
+      // Ritorna il turno al giocatore
+      isMyTurn = true;
+      updateUI();
+    }
+
+    function quitGame() {
+      document.getElementById('battle-view').classList.add('hidden');
+      document.getElementById('menu-view').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
