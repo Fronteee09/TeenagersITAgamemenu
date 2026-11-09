@@ -419,7 +419,7 @@
 
     let isAdmin = false;
 
-    // ARCHIVIO AGGIORNATO CON TUTTE LE CARTE
+    // ARCHIVIO CARTE COMPLETO CON BATZUPPER
     const teenCardsArchive = {
       "frontealpino": { name: "Fronte Alpino", image: "frontealpino.png", hp: 80, maxHp: 80, attack: { damage: 10 }, ability: { name: "Abilità", damage: 20 } },
       "clipp3r": { name: "Clipp3r", image: "clipp3r.png", hp: 80, maxHp: 80, attack: { damage: 15 }, ability: { name: "Sketchbook", damage: 30 } },
@@ -427,7 +427,8 @@
       "aspro": { name: "Aspro", image: "aspro.png", hp: 100, maxHp: 100, attack: { damage: 20 }, ability: { name: "Aspro", damage: 50 } },
       "automoderator": { name: "Automoderator", image: "automoderator.png", hp: 40, maxHp: 40, attack: { damage: 10 }, ability: { name: "Ban", damage: 999 } },
       "illuminick138": { name: "Illuminick138", image: "illuminick138.png", hp: 80, maxHp: 80, attack: { damage: 15 }, ability: { name: "Attacco Psicoanalitico", damage: 50, heal: 10 } },
-      "nannikart60peironi": { name: "Nannikart60Peironi", image: "nannikart60peironi.png", hp: 80, maxHp: 80, attack: { damage: 15 }, ability: { name: "Forbici Razzo", damage: 69 }, ability2: { name: "Fagioli", damage: 40 } }
+      "nannikart60peironi": { name: "Nannikart60Peironi", image: "nannikart60peironi.png", hp: 80, maxHp: 80, attack: { damage: 15 }, ability: { name: "Forbici Razzo", damage: 69 }, ability2: { name: "Fagioli", damage: 40 } },
+      "batzupper": { name: "Batzupper", image: "batzupper.png", hp: 90, maxHp: 90, attack: { damage: 15 }, ability: { name: "Jetpack Zuppa", damage: 30 }, ability2: { name: "Raggio di Nerd", damage: 60 } }
     };
 
     const firebaseConfig = {
@@ -795,7 +796,6 @@
         damage = cardIdIsAutomoderator(myCard) ? enemyData.hand[targetCardIndex].hp : myCard.abilityDamage;
         myCard.abilityUsed = true;
 
-        // Se usa l'abilità di Illuminick138, aggiunge 10 HP a una carta alleata a scelta
         if (myCard.cardId === "illuminick138" && myCard.abilityHeal > 0) {
           const aliveAllies = myData.hand.filter(c => c.hp > 0 && c.hp < c.maxHp);
           if (aliveAllies.length > 0) {
