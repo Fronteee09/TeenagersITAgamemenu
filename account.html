@@ -69,6 +69,12 @@
       filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
     }
 
+    .profile-avatar-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+
     .profile-avatar {
       width: 85px;
       height: 85px;
@@ -77,7 +83,6 @@
       border: 2px solid rgba(255, 255, 255, 0.2);
       background: rgba(255, 255, 255, 0.05);
       box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-      margin-bottom: 10px;
     }
 
     h1 {
@@ -135,7 +140,6 @@
       object-fit: contain;
     }
 
-    /* BARRA XP NEL PROFILO */
     .profile-xp-bar-container {
       width: 100%;
       height: 8px;
@@ -150,6 +154,37 @@
       background: #10b981;
       width: 0%;
       transition: width 0.4s ease;
+    }
+
+    /* MODALE SCELTA AVATAR (ADMIN) */
+    .modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75); display: flex; justify-content: center; align-items: center;
+      z-index: 10;
+    }
+    .modal.hidden { display: none !important; }
+    .modal-content {
+      background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px; padding: 25px; width: 90%; max-width: 380px; text-align: center;
+    }
+    .avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .avatar-option {
+      width: 65px;
+      height: 65px;
+      border-radius: 50%;
+      object-fit: cover;
+      cursor: pointer;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .avatar-option:hover {
+      transform: scale(1.08);
+      border-color: #3b82f6;
     }
 
     .auth-input {
@@ -260,10 +295,12 @@
     </div>
 
     <!-- AVATAR -->
-    <img src="logo.png" alt="Avatar Giocatore" class="profile-avatar">
+    <div class="profile-avatar-wrapper">
+      <img id="profile-avatar-img" src="logo.png" alt="Avatar Giocatore" class="profile-avatar">
+    </div>
     
     <h1 id="page-title">Profilo Giocatore</h1>
-    <a href="#" id="change-img-btn" class="change-img-link" onclick="alert('Funzione cambio immagine in arrivo!'); return false;">📷 Cambia Immagine</a>
+    <a href="#" id="change-img-btn" class="change-img-link hidden" onclick="openAvatarModal(); return false;">📷 Cambia Immagine</a>
 
     <!-- SEZIONE PROFILO (Visibile se loggato) -->
     <div id="profile-section" class="hidden">
@@ -286,10 +323,10 @@
         </div>
       </div>
 
-      <!-- Spazio predisposto per la futura valuta -->
+      <!-- Spazio valuta -->
       <div class="info-box" id="currency-box">
         <div class="info-label">Valuta di Gioco</div>
-        <div class="info-value" id="currency-display">💎 0 Monete (In arrivo)</div>
+        <div class="info-value" id="currency-display">💎 0 Monete</div>
       </div>
 
       <button class="btn btn-danger" onclick="handleLogout()">Disconnettiti</button>
@@ -315,6 +352,25 @@
     </div>
   </div>
 
+  <!-- MODALE SCELTA IMMAGINE PROFILO (SOLO ADMIN) -->
+  <div id="avatar-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 8px; color: #38bdf8;">Scegli Immagine Profilo</h3>
+      <p style="margin-bottom: 15px; font-size: 0.85rem; color: #94a3b8;">Seleziona una delle immagini ufficiali autorizzate:</p>
+      
+      <div class="avatar-grid">
+        <img src="fotoprofilo1.png" class="avatar-option" onclick="selectNewAvatar('fotoprofilo1.png')" onerror="this.src='logo.png'">
+        <img src="fotoprofilo2.png" class="avatar-option" onclick="selectNewAvatar('fotoprofilo2.png')" onerror="this.src='logo.png'">
+        <img src="fotoprofilo3.png" class="avatar-option" onclick="selectNewAvatar('fotoprofilo3.png')" onerror="this.src='logo.png'">
+        <img src="fotoprofilo4.png" class="avatar-option" onclick="selectNewAvatar('fotoprofilo4.png')" onerror="this.src='logo.png'">
+        <img src="fotoprofilo5.png" class="avatar-option" onclick="selectNewAvatar('fotoprofilo5.png')" onerror="this.src='logo.png'">
+        <img src="fotoprofilo6.png" class="avatar-option" onclick="selectNewAvatar('fotoprofilo6.png')" onerror="this.src='logo.png'">
+      </div>
+
+      <button class="btn" style="background: rgba(255,255,255,0.1); margin-top: 10px;" onclick="closeAvatarModal()">Chiudi</button>
+    </div>
+  </div>
+
   <!-- SCRIPT -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -325,7 +381,13 @@
       createUserWithEmailAndPassword, 
       signOut 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const ADMIN_UIDS = [
+      "hObA3vADPIfO0VDuaERwjFFzx303",
+      "LRS2V4mx1kOKGZl65J1DYzqRX9q1",
+      "vaUTilhimXfpcPuhFM1z2llA9mZ2"
+    ];
 
     const firebaseConfig = {
       apiKey: "AIzaSyCCqjJNoMeliQskPzlMAGOqeF_-aFZuksY",
@@ -341,6 +403,7 @@
     const db = getFirestore(app);
 
     let authMode = 'login';
+    let loggedUserId = null;
 
     window.switchMode = function(mode) {
       authMode = mode;
@@ -365,14 +428,25 @@
       const authSection = document.getElementById('auth-section');
       const usernameElem = document.getElementById('username-display');
       const changeImgBtn = document.getElementById('change-img-btn');
+      const avatarImg = document.getElementById('profile-avatar-img');
 
       if (user) {
+        currentUser = user;
+        loggedUserId = user.uid;
         authSection.classList.add('hidden');
         profileSection.classList.remove('hidden');
-        changeImgBtn.style.display = 'inline-block';
+
+        // Mostra il tasto cambio immagine SOLO se l'utente è tra i 3 admin autorizzati
+        if (ADMIN_UIDS.includes(user.uid)) {
+          changeImgBtn.classList.remove('hidden');
+        } else {
+          changeImgBtn.classList.add('hidden');
+        }
 
         let detectedName = "Giocatore";
         let userXp = 0;
+        let userCoins = 0;
+        let userAvatar = "logo.png";
 
         try {
           const userDocRef = doc(db, "utenti", user.uid);
@@ -384,13 +458,16 @@
             else if (data.nickname) detectedName = data.nickname;
             
             userXp = data.xp || 0;
+            userCoins = data.coins || 0;
+            if (data.avatar) userAvatar = data.avatar;
           } else {
-            // Se l'utente non ha ancora il documento in "utenti", lo inizializziamo
             await setDoc(userDocRef, {
               username: user.email ? user.email.split('@')[0] : "Giocatore",
               xp: 0,
               level: 1,
               wins: 0,
+              coins: 0,
+              avatar: "logo.png",
               createdAt: new Date()
             }, { merge: true });
           }
@@ -404,16 +481,17 @@
         }
 
         usernameElem.innerText = detectedName;
+        avatarImg.src = userAvatar;
 
-        // Calcolo livello e XP (100 XP per livello)
+        // Calcolo livello e XP
         const currentLevel = Math.floor(userXp / 100) + 1;
         const xpInLevel = userXp % 100;
 
         document.getElementById('level-text-display').innerText = `Livello ${currentLevel}`;
         document.getElementById('xp-details-text').innerText = `${xpInLevel} / 100 XP (Totale: ${userXp})`;
         document.getElementById('profile-xp-fill').style.width = `${xpInLevel}%`;
+        document.getElementById('currency-display').innerText = `💎 ${userCoins} Monete`;
 
-        // Gestione icone livello (controlla che esista l'immagine o usa di fallback)
         const badgeImgPath = `${currentLevel}.png`;
         document.getElementById('level-top-img').src = badgeImgPath;
         document.getElementById('level-box-img').src = badgeImgPath;
@@ -421,9 +499,37 @@
       } else {
         profileSection.classList.add('hidden');
         authSection.classList.remove('hidden');
-        changeImgBtn.style.display = 'none';
+        changeImgBtn.classList.add('hidden');
+        loggedUserId = null;
       }
     });
+
+    window.openAvatarModal = function() {
+      document.getElementById('avatar-modal').classList.remove('hidden');
+    }
+
+    window.closeAvatarModal = function() {
+      document.getElementById('avatar-modal').classList.add('hidden');
+    }
+
+    window.selectNewAvatar = async function(avatarFileName) {
+      if (!loggedUserId || !ADMIN_UIDS.includes(loggedUserId)) {
+        alert("Non sei autorizzato a cambiare l'immagine del profilo.");
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "utenti", loggedUserId);
+        await updateDoc(userRef, { avatar: avatarFileName });
+
+        document.getElementById('profile-avatar-img').src = avatarFileName;
+        closeAvatarModal();
+        alert("Immagine profilo aggiornata con successo!");
+      } catch (err) {
+        console.error("Errore salvataggio avatar:", err);
+        alert("Errore durante l'aggiornamento dell'immagine.");
+      }
+    };
 
     window.handleAuth = async function(e) {
       e.preventDefault();
@@ -445,12 +551,13 @@
           await signInWithEmailAndPassword(auth, emailToUse, password);
         } else {
           const userCred = await createUserWithEmailAndPassword(auth, emailToUse, password);
-          // Salva su Firestore nella collezione "utenti"
           await setDoc(doc(db, "utenti", userCred.user.uid), {
             username: inputNick,
             xp: 0,
             level: 1,
             wins: 0,
+            coins: 0,
+            avatar: "logo.png",
             createdAt: new Date()
           });
         }
