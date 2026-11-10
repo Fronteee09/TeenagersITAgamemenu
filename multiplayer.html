@@ -500,7 +500,8 @@
           document.getElementById('admin-reset-btn').classList.remove('hidden');
         }
 
-        const userDoc = await getDoc(doc(db, "users", user.uid));
+        // CORRETTO: Usa la collezione "utenti" invece di "users"
+        const userDoc = await getDoc(doc(db, "utenti", user.uid));
         if (userDoc.exists()) {
           const d = userDoc.data();
           userProfileData.username = d.username || user.email.split('@')[0];
@@ -925,10 +926,10 @@
       await updateDoc(roomRef, updatePayload);
     };
 
-    // Assegna 15 XP al vincitore su Firestore
+    // Assegna 15 XP al vincitore su Firestore (collezione "utenti")
     async function awardWinAndXP(userId) {
       try {
-        const userRef = doc(db, "users", userId);
+        const userRef = doc(db, "utenti", userId);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const d = userSnap.data();
@@ -941,6 +942,13 @@
             wins: currentWins,
             level: newLevel
           });
+        } else {
+          // Se per qualche motivo il documento non esiste, lo crea
+          await setDoc(userRef, {
+            xp: 15,
+            wins: 1,
+            level: 1
+          }, { merge: true });
         }
       } catch (err) {
         console.error("Errore aggiornamento XP vittoria:", err);
