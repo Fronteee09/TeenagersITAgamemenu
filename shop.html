@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shop & Livelli - TeenagersITA Cards</title>
+
+  <!-- FAVICON -->
+  <link rel="icon" type="image/png" href="logo.png">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #090e18 url('sfondohome.png') no-repeat center center fixed;
+      background-size: cover;
+      color: #ffffff;
+      padding: 20px;
+    }
+
+    .bg-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(5, 10, 20, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1;
+    }
+
+    .main-container {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 750px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+    }
+
+    p.subtitle {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 25px;
+    }
+
+    /* SEZIONE PROGRESSO XP */
+    .progress-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 25px;
+      text-align: left;
+    }
+
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .xp-bar-container {
+      width: 100%;
+      height: 14px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 7px;
+      overflow: hidden;
+    }
+
+    .xp-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #2563eb, #10b981);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    /* CONTROLLI ADMIN */
+    .admin-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .btn-add-offer {
+      padding: 10px 18px;
+      border-radius: 20px;
+      border: 1px dashed #10b981;
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .btn-add-offer:hover {
+      background: rgba(16, 185, 129, 0.4);
+    }
+
+    /* GRIGLIA OFFERTE SHOP */
+    .shop-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 25px;
+      max-height: 400px;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+
+    .shop-item {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+    }
+
+    .shop-item-info {
+      flex: 1;
+      padding-right: 15px;
+    }
+
+    .shop-item-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #38bdf8;
+      margin-bottom: 4px;
+    }
+
+    .shop-item-desc {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+
+    .shop-item-cost {
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #f59e0b;
+    }
+
+    .btn-buy {
+      padding: 10px 18px;
+      border-radius: 20px;
+      border: none;
+      background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-delete-admin {
+      padding: 6px 12px;
+      border-radius: 12px;
+      border: 1px solid #ef4444;
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      font-size: 0.75rem;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+
+    /* MODALE AGGIUNTA OFFERTA */
+    .modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75); display: flex; justify-content: center; align-items: center;
+      z-index: 10;
+    }
+    .modal.hidden { display: none !important; }
+    .modal-content {
+      background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px; padding: 25px; width: 90%; max-width: 450px; text-align: center;
+    }
+    .modal-input {
+      width: 100%; padding: 11px 15px; margin-bottom: 12px;
+      border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(30, 41, 59, 0.7); color: #fff; outline: none; font-size: 0.9rem;
+    }
+    .modal-btns { display: flex; gap: 10px; margin-top: 15px; }
+
+    .back-link {
+      display: inline-block;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="bg-overlay"></div>
+
+  <div class="main-container">
+    <h1>🛒 Shop & Livelli</h1>
+    <p class="subtitle">Vinci le partite per guadagnare XP e sbloccare ricompense!</p>
+
+    <!-- PROFILO XP -->
+    <div class="progress-card">
+      <div class="progress-info">
+        <span id="user-level-text">Livello 1</span>
+        <span id="user-xp-text">0 / 100 XP</span>
+      </div>
+      <div class="xp-bar-container">
+        <div id="xp-bar-fill" class="xp-bar-fill"></div>
+      </div>
+    </div>
+
+    <!-- CONTROLLI ADMIN PER CREARE NUOVE OFFERTE -->
+    <div id="admin-controls" class="admin-controls hidden">
+      <h3 style="font-size: 1rem; color: #f87171;">🛡️ Gestione Offerte (Admin)</h3>
+      <button class="btn-add-offer" onclick="openOfferModal()">➕ Nuova Offerta</button>
+    </div>
+
+    <!-- LISTA OFFERTE -->
+    <div id="shop-grid" class="shop-grid">
+      <p style="color: #94a3b8;">Caricamento offerte in corso...</p>
+    </div>
+
+    <a href="index.html" class="back-link">← Torna al Menu Principale</a>
+  </div>
+
+  <!-- MODALE CREAZIONE OFFERTA (ADMIN) -->
+  <div id="offer-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 8px; color: #34d399;">Crea Nuova Offerta Shop</h3>
+      <p style="margin-bottom: 15px; font-size: 0.85rem; color: #94a3b8;">La nuova offerta sarà immediatamente visibile nel negozio per tutti i giocatori.</p>
+
+      <form id="offer-form" onsubmit="submitNewOffer(event)">
+        <input type="text" id="off-title" placeholder="Titolo dell'offerta / Carta" required class="modal-input">
+        <textarea id="off-desc" placeholder="Descrizione dell'oggetto o abilità" required class="modal-input" style="height: 70px; resize: none;"></textarea>
+        <input type="text" id="off-cost" placeholder="Costo o Livello richiesto (es. 50 XP / Lv. 3)" required class="modal-input">
+        
+        <div class="modal-btns">
+          <button type="submit" class="btn-add-offer" style="flex:1;">Pubblica</button>
+          <button type="button" class="btn-add-offer" style="flex:1; border-color: #ef4444; color: #f87171;" onclick="closeOfferModal()">Annulla</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FIREBASE & LOGICA -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      getDoc, 
+      collection, 
+      addDoc, 
+      deleteDoc, 
+      onSnapshot, 
+      query, 
+      orderBy 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const ADMIN_UIDS = [
+      "hObA3vADPIfO0VDuaERwjFFzx303",
+      "LRS2V4mx1kOKGZl65J1DYzqRX9q1",
+      "vaUTilhimXfpcPuhFM1z2llA9mZ2"
+    ];
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCqjJNoMeliQskPzlMAGOqeF_-aFZuksY",
+      authDomain: "teenagersita-cards.firebaseapp.com",
+      projectId: "teenagersita-cards",
+      storageBucket: "teenagersita-cards.firebasestorage.app",
+      messagingSenderId: "651917703980",
+      appId: "1:651917703980:web:d4c8f87b4645e97c46ca89"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let isAdmin = false;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        if (ADMIN_UIDS.includes(user.uid)) {
+          isAdmin = true;
+          document.getElementById('admin-controls').classList.remove('hidden');
+        }
+
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            const xp = data.xp || 0;
+            const level = Math.floor(xp / 100) + 1;
+            const xpInCurrentLevel = xp % 100;
+
+            document.getElementById('user-level-text').innerText = `Livello ${level}`;
+            document.getElementById('user-xp-text').innerText = `${xpInCurrentLevel} / 100 XP (Totale: ${xp})`;
+            document.getElementById('xp-bar-fill').style.width = `${xpInCurrentLevel}%`;
+          }
+        } catch (err) {
+          console.error("Errore recupero XP utente:", err);
+        }
+
+        listenToShopOffers();
+      } else {
+        alert("Devi effettuare l'accesso per visualizzare lo shop.");
+        window.location.href = "account.html";
+      }
+    });
+
+    // Ascolta e rende visibili le offerte dello Shop in tempo reale
+    function listenToShopOffers() {
+      const q = query(collection(db, "shopOffers"), orderBy("timestamp", "desc"));
+      onSnapshot(q, (snapshot) => {
+        const grid = document.getElementById('shop-grid');
+        grid.innerHTML = "";
+
+        if (snapshot.empty) {
+          grid.innerHTML = "<p style='color: #94a3b8;'>Nessuna offerta attiva al momento nello Shop.</p>";
+          return;
+        }
+
+        snapshot.forEach((docSnap) => {
+          const offer = docSnap.data();
+          const offerId = docSnap.id;
+
+          const itemEl = document.createElement('div');
+          itemEl.className = 'shop-item';
+          itemEl.innerHTML = `
+            <div class="shop-item-info">
+              <div class="shop-item-title">${offer.title}</div>
+              <div class="shop-item-desc">${offer.desc}</div>
+              <div class="shop-item-cost">Requisito / Costo: ${offer.cost}</div>
+            </div>
+            <div style="display: flex; align-items: center;">
+              <button class="btn-buy" onclick="alert('Ricompensa richiesta!')">Ottieni</button>
+              ${isAdmin ? `<button class="btn-delete-admin" onclick="deleteOffer('${offerId}')">Elimina</button>` : ''}
+            </div>
+          `;
+          grid.appendChild(itemEl);
+        });
+      });
+    }
+
+    // Modal Admin per creare offerte
+    window.openOfferModal = function() { document.getElementById('offer-modal').classList.remove('hidden'); }
+    window.closeOfferModal = function() { document.getElementById('offer-modal').classList.add('hidden'); }
+
+    window.submitNewOffer = async function(event) {
+      event.preventDefault();
+      if (!isAdmin) return;
+
+      const title = document.getElementById('off-title').value.trim();
+      const desc = document.getElementById('off-desc').value.trim();
+      const cost = document.getElementById('off-cost').value.trim();
+
+      try {
+        await addDoc(collection(db, "shopOffers"), {
+          title: title,
+          desc: desc,
+          cost: cost,
+          timestamp: Date.now()
+        });
+
+        closeOfferModal();
+        document.getElementById('offer-form').reset();
+      } catch (err) {
+        console.error("Errore creazione offerta:", err);
+        alert("Errore durante la pubblicazione dell'offerta.");
+      }
+    };
+
+    window.deleteOffer = async function(offerId) {
+      if (!isAdmin) return;
+      if (confirm("Sei sicuro di voler rimuovere questa offerta dallo shop?")) {
+        try {
+          await deleteDoc(doc(db, "shopOffers", offerId));
+        } catch (err) {
+          console.error("Errore eliminazione offerta:", err);
+        }
+      }
+    };
+  </script>
+</body>
+</html>
