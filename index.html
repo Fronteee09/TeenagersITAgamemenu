@@ -148,6 +148,7 @@
     <div class="btn-group">
       <a href="multiplayer.html" class="btn">Multiplayer (Stanze)</a>
       <a href="bot.html" class="btn btn-secondary">Gioca contro il Bot</a>
+      <a href="shop.html" class="btn btn-secondary">🛒 Shop</a>
       <a href="account.html" class="btn btn-secondary">Profilo / Account</a>
       <button class="btn btn-secondary" onclick="openCardModal()">✨ Proponi una Carta</button>
       
@@ -222,7 +223,6 @@
     onAuthStateChanged(auth, async (user) => {
       let level = 1;
       if (user) {
-        // Mostra il pulsante admin se l'utente loggato è tra i 3 autorizzati
         if (ADMIN_UIDS.includes(user.uid)) {
           document.getElementById('admin-panel-btn').classList.remove('hidden');
         }
@@ -244,7 +244,6 @@
       levelImg.alt = `Livello ${level}`;
     });
 
-    // Modale Proposta Utente
     window.openCardModal = function() { document.getElementById('card-modal').classList.remove('hidden'); }
     window.closeCardModal = function() { document.getElementById('card-modal').classList.add('hidden'); }
 
@@ -277,7 +276,6 @@
       }
     };
 
-    // Modale Pannello Admin
     window.openAdminModal = async function() {
       document.getElementById('admin-modal').classList.remove('hidden');
       const container = document.getElementById('admin-proposals-list');
