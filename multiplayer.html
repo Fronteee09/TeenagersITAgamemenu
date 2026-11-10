@@ -122,7 +122,6 @@
       opacity: 0.6;
     }
 
-    /* PULSANTE ADMIN SINGOLA STANZA */
     .btn-admin-single-reset {
       padding: 8px 12px;
       border-radius: 20px;
@@ -132,10 +131,6 @@
       font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
-    }
-
-    .btn-admin-single-reset:hover {
-      background: rgba(239, 68, 68, 0.4);
     }
 
     .private-section {
@@ -172,7 +167,6 @@
       margin-bottom: 12px;
     }
 
-    /* PULSANTE ADMIN GLOBALE */
     .btn-admin-reset {
       width: 100%;
       padding: 10px;
@@ -218,16 +212,45 @@
 
     .player-header {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 10px;
       margin-bottom: 10px;
       font-weight: bold;
+    }
+
+    .player-info-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .player-avatar {
       width: 35px;
       height: 35px;
       border-radius: 50%;
+    }
+
+    /* BARRA XP IN BATTAGLIA */
+    .player-xp-container {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      text-align: right;
+    }
+
+    .mini-xp-bar {
+      width: 100px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 3px;
+    }
+
+    .mini-xp-fill {
+      height: 100%;
+      background: #10b981;
+      width: 0%;
+      transition: width 0.3s;
     }
 
     .cards-row {
@@ -373,23 +396,36 @@
 
     <!-- VISTA 2: CAMPO DI BATTAGLIA -->
     <div id="lobby-view" class="hidden">
-      <!-- TITOLO AGGIORNATO CON ID STANZA -->
       <h1 id="current-room-title">Partita Multiplayer</h1>
       <div id="turn-badge" class="turn-indicator">In attesa dell'avversario...</div>
 
       <div class="battle-grid">
+        <!-- SEZIONE AVVERSARIO -->
         <div class="player-section">
           <div class="player-header">
-            <img id="enemy-avatar" src="logo.png" class="player-avatar">
-            <span id="enemy-name">Avversario</span>
+            <div class="player-info-left">
+              <img src="logo.png" class="player-avatar">
+              <span id="enemy-name">Avversario</span>
+            </div>
+            <div class="player-xp-container">
+              <span id="enemy-level-text">Lv. 1</span>
+              <div class="mini-xp-bar"><div id="enemy-xp-fill" class="mini-xp-fill"></div></div>
+            </div>
           </div>
           <div id="enemy-hand" class="cards-row"></div>
         </div>
 
+        <!-- SEZIONE MIEI DATI -->
         <div class="player-section">
           <div class="player-header">
-            <img id="my-avatar" src="logo.png" class="player-avatar">
-            <span id="my-name">Tu</span>
+            <div class="player-info-left">
+              <img src="logo.png" class="player-avatar">
+              <span id="my-name">Tu</span>
+            </div>
+            <div class="player-xp-container">
+              <span id="my-level-text">Lv. 1</span>
+              <div class="mini-xp-bar"><div id="my-xp-fill" class="mini-xp-fill"></div></div>
+            </div>
           </div>
           <div id="my-hand" class="cards-row"></div>
         </div>
@@ -447,7 +483,7 @@
     const db = getFirestore(app);
 
     let currentUser = null;
-    let userProfileData = { username: "Giocatore", photoURL: "logo.png" };
+    let userProfileData = { username: "Giocatore", xp: 0, level: 1 };
     let activeRoomId = null;
     let unsubscribeRoomListener = null;
 
@@ -466,7 +502,10 @@
 
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
-          userProfileData.username = userDoc.data().username || user.email.split('@')[0];
+          const d = userDoc.data();
+          userProfileData.username = d.username || user.email.split('@')[0];
+          userProfileData.xp = d.xp || 0;
+          userProfileData.level = Math.floor(userProfileData.xp / 100) + 1;
         } else {
           userProfileData.username = user.email ? user.email.split('@')[0] : "Giocatore";
         }
@@ -604,11 +643,23 @@
       let updatePayload = {};
 
       if (!roomData.player1) {
-        updatePayload.player1 = { uid: currentUser.uid, username: userProfileData.username, hand: generateRandomHand() };
+        updatePayload.player1 = { 
+          uid: currentUser.uid, 
+          username: userProfileData.username, 
+          xp: userProfileData.xp,
+          level: userProfileData.level,
+          hand: generateRandomHand() 
+        };
         updatePayload.status = "waiting";
         updatePayload.lastActive = Date.now();
       } else if (!roomData.player2 && roomData.player1.uid !== currentUser.uid) {
-        updatePayload.player2 = { uid: currentUser.uid, username: userProfileData.username, hand: generateRandomHand() };
+        updatePayload.player2 = { 
+          uid: currentUser.uid, 
+          username: userProfileData.username, 
+          xp: userProfileData.xp,
+          level: userProfileData.level,
+          hand: generateRandomHand() 
+        };
         updatePayload.status = "playing";
         updatePayload.turn = roomData.player1.uid;
         updatePayload.lastActive = Date.now();
@@ -620,9 +671,7 @@
       await updateDoc(roomRef, updatePayload);
       activeRoomId = roomId;
 
-      // Mostra il codice o il nome della stanza nel titolo della lobby
       updateRoomTitleDisplay(roomId);
-
       document.getElementById('rooms-view').classList.add('hidden');
       document.getElementById('lobby-view').classList.remove('hidden');
       listenToCurrentRoom(roomId);
@@ -635,14 +684,18 @@
 
       await setDoc(roomRef, {
         status: "waiting",
-        player1: { uid: currentUser.uid, username: userProfileData.username, hand: generateRandomHand() },
+        player1: { 
+          uid: currentUser.uid, 
+          username: userProfileData.username, 
+          xp: userProfileData.xp,
+          level: userProfileData.level,
+          hand: generateRandomHand() 
+        },
         player2: null,
         lastActive: Date.now()
       });
 
       activeRoomId = code;
-      
-      // Mostra il codice privato nel titolo della lobby
       updateRoomTitleDisplay(code);
 
       document.getElementById('rooms-view').classList.add('hidden');
@@ -668,7 +721,7 @@
     function listenToCurrentRoom(roomId) {
       updateRoomTitleDisplay(roomId);
       const roomRef = doc(db, "rooms", roomId);
-      unsubscribeRoomListener = onSnapshot(roomRef, (docSnap) => {
+      unsubscribeRoomListener = onSnapshot(roomRef, async (docSnap) => {
         if (!docSnap.exists()) return;
         const data = docSnap.data();
 
@@ -710,14 +763,32 @@
           targetingMode = false;
         }
 
+        // Renderizza i tuoi dati e XP
         if (myData) {
           document.getElementById('my-name').innerText = myData.username + " (Tu)";
+          const myXp = myData.xp || 0;
+          const myLvl = Math.floor(myXp / 100) + 1;
+          const myXpInLvl = myXp % 100;
+          document.getElementById('my-level-text').innerText = `Lv. ${myLvl}`;
+          document.getElementById('my-xp-fill').style.width = `${myXpInLvl}%`;
+
           renderHand(document.getElementById('my-hand'), myData.hand, true, isMyTurn);
         }
+
+        // Renderizza dati e XP dell'avversario
         if (enemyData) {
           document.getElementById('enemy-name').innerText = enemyData.username;
+          const enemyXp = enemyData.xp || 0;
+          const enemyLvl = Math.floor(enemyXp / 100) + 1;
+          const enemyXpInLvl = enemyXp % 100;
+          document.getElementById('enemy-level-text').innerText = `Lv. ${enemyLvl}`;
+          document.getElementById('enemy-xp-fill').style.width = `${enemyXpInLvl}%`;
+
           renderHand(document.getElementById('enemy-hand'), enemyData.hand, false, isMyTurn);
         } else {
+          document.getElementById('enemy-name').innerText = "Avversario";
+          document.getElementById('enemy-level-text').innerText = "Lv. -";
+          document.getElementById('enemy-xp-fill').style.width = `0%`;
           document.getElementById('enemy-hand').innerHTML = "<p style='color:#94a3b8;'>Attesa giocatore...</p>";
         }
       });
@@ -829,9 +900,11 @@
       enemyData.hand[targetCardIndex].hp -= damage;
       targetingMode = false;
 
+      // CONTROLLO VITTORIA: Se l'avversario non ha più carte vive
       const hasEnemyAlive = enemyData.hand.some(c => c.hp > 0);
       if (!hasEnemyAlive) {
-        alert("Complimenti! Hai eliminato tutte le carte dell'avversario e hai vinto la partita!");
+        alert("🎉 Complimenti! Hai vinto la partita e guadagnato +15 XP!");
+        await awardWinAndXP(currentUser.uid);
         window.leaveRoom();
         return;
       }
@@ -851,6 +924,28 @@
 
       await updateDoc(roomRef, updatePayload);
     };
+
+    // Assegna 15 XP al vincitore su Firestore
+    async function awardWinAndXP(userId) {
+      try {
+        const userRef = doc(db, "users", userId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const d = userSnap.data();
+          const currentXp = (d.xp || 0) + 15;
+          const currentWins = (d.wins || 0) + 1;
+          const newLevel = Math.floor(currentXp / 100) + 1;
+
+          await updateDoc(userRef, {
+            xp: currentXp,
+            wins: currentWins,
+            level: newLevel
+          });
+        }
+      } catch (err) {
+        console.error("Errore aggiornamento XP vittoria:", err);
+      }
+    }
 
     function cardIdIsAutomoderator(card) {
       return card.cardId === "automoderator";
