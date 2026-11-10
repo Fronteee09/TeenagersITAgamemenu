@@ -101,30 +101,35 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 15px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px dashed rgba(239, 68, 68, 0.4);
+      padding: 12px 18px;
+      border-radius: 14px;
     }
 
     .btn-add-offer {
-      padding: 10px 18px;
+      padding: 9px 16px;
       border-radius: 20px;
-      border: 1px dashed #10b981;
+      border: 1px solid #10b981;
       background: rgba(16, 185, 129, 0.2);
       color: #34d399;
       font-weight: bold;
       cursor: pointer;
       font-size: 0.85rem;
+      transition: background 0.2s;
     }
 
     .btn-add-offer:hover {
       background: rgba(16, 185, 129, 0.4);
     }
 
-    /* GRIGLIA OFFERTE SHOP */
+    /* FILA OFFERTE SHOP */
     .shop-grid {
       display: flex;
       flex-direction: column;
       gap: 15px;
       margin-bottom: 25px;
-      max-height: 400px;
+      max-height: 420px;
       overflow-y: auto;
       padding-right: 5px;
     }
@@ -155,7 +160,8 @@
     .shop-item-desc {
       font-size: 0.85rem;
       color: #cbd5e1;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
+      line-height: 1.3;
     }
 
     .shop-item-cost {
@@ -183,6 +189,10 @@
       font-size: 0.75rem;
       cursor: pointer;
       margin-left: 10px;
+    }
+
+    .btn-delete-admin:hover {
+      background: rgba(239, 68, 68, 0.4);
     }
 
     /* MODALE AGGIUNTA OFFERTA */
@@ -233,10 +243,10 @@
       </div>
     </div>
 
-    <!-- CONTROLLI ADMIN PER CREARE NUOVE OFFERTE -->
+    <!-- PANNELLO ADMIN (SOLO UID AUTORIZZATI) -->
     <div id="admin-controls" class="admin-controls hidden">
-      <h3 style="font-size: 1rem; color: #f87171;">🛡️ Gestione Offerte (Admin)</h3>
-      <button class="btn-add-offer" onclick="openOfferModal()">➕ Nuova Offerta</button>
+      <h3 style="font-size: 0.95rem; color: #f87171;">🛡️ Gestione Offerte (Admin)</h3>
+      <button class="btn-add-offer" onclick="openOfferModal()">➕ Crea Offerta</button>
     </div>
 
     <!-- LISTA OFFERTE -->
@@ -250,16 +260,16 @@
   <!-- MODALE CREAZIONE OFFERTA (ADMIN) -->
   <div id="offer-modal" class="modal hidden">
     <div class="modal-content">
-      <h3 style="margin-bottom: 8px; color: #34d399;">Crea Nuova Offerta Shop</h3>
-      <p style="margin-bottom: 15px; font-size: 0.85rem; color: #94a3b8;">La nuova offerta sarà immediatamente visibile nel negozio per tutti i giocatori.</p>
+      <h3 style="margin-bottom: 8px; color: #34d399;">Crea Nuova Offerta</h3>
+      <p style="margin-bottom: 15px; font-size: 0.85rem; color: #94a3b8;">Inserisci i dettagli dell'offerta da aggiungere allo shop per tutti gli utenti.</p>
 
       <form id="offer-form" onsubmit="submitNewOffer(event)">
-        <input type="text" id="off-title" placeholder="Titolo dell'offerta / Carta" required class="modal-input">
-        <textarea id="off-desc" placeholder="Descrizione dell'oggetto o abilità" required class="modal-input" style="height: 70px; resize: none;"></textarea>
-        <input type="text" id="off-cost" placeholder="Costo o Livello richiesto (es. 50 XP / Lv. 3)" required class="modal-input">
+        <input type="text" id="off-title" placeholder="Titolo dell'offerta / Nome Carta" required class="modal-input">
+        <textarea id="off-desc" placeholder="Corpo del testo / Descrizione dettagliata" required class="modal-input" style="height: 80px; resize: none;"></textarea>
+        <input type="text" id="off-cost" placeholder="Costo dell'oggetto o Livello richiesto (es. 100 XP / Lv. 2)" required class="modal-input">
         
         <div class="modal-btns">
-          <button type="submit" class="btn-add-offer" style="flex:1;">Pubblica</button>
+          <button type="submit" class="btn-add-offer" style="flex:1;">Pubblica Offerta</button>
           <button type="button" class="btn-add-offer" style="flex:1; border-color: #ef4444; color: #f87171;" onclick="closeOfferModal()">Annulla</button>
         </div>
       </form>
@@ -328,12 +338,12 @@
 
         listenToShopOffers();
       } else {
-        alert("Devi effettuare l'accesso per visualizzare lo shop.");
+        alert("Devi effettuare l'accesso per accedere allo shop.");
         window.location.href = "account.html";
       }
     });
 
-    // Ascolta e rende visibili le offerte dello Shop in tempo reale
+    // Ascolta e aggiorna le offerte dello Shop in tempo reale
     function listenToShopOffers() {
       const q = query(collection(db, "shopOffers"), orderBy("timestamp", "desc"));
       onSnapshot(q, (snapshot) => {
@@ -341,7 +351,7 @@
         grid.innerHTML = "";
 
         if (snapshot.empty) {
-          grid.innerHTML = "<p style='color: #94a3b8;'>Nessuna offerta attiva al momento nello Shop.</p>";
+          grid.innerHTML = "<p style='color: #94a3b8;'>Nessuna offerta al momento presente nello Shop.</p>";
           return;
         }
 
@@ -358,7 +368,7 @@
               <div class="shop-item-cost">Requisito / Costo: ${offer.cost}</div>
             </div>
             <div style="display: flex; align-items: center;">
-              <button class="btn-buy" onclick="alert('Ricompensa richiesta!')">Ottieni</button>
+              <button class="btn-buy" onclick="alert('Offerta selezionata!')">Sblocca</button>
               ${isAdmin ? `<button class="btn-delete-admin" onclick="deleteOffer('${offerId}')">Elimina</button>` : ''}
             </div>
           `;
