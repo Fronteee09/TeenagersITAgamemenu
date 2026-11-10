@@ -27,7 +27,6 @@
       padding: 20px;
     }
 
-    /* SFONDO SCURO E SFOCATO */
     .bg-overlay {
       position: fixed;
       top: 0;
@@ -39,7 +38,6 @@
       z-index: 1;
     }
 
-    /* BOX CENTRALE RESPONSIVE */
     .card-container {
       position: relative;
       z-index: 2;
@@ -71,7 +69,6 @@
       filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
     }
 
-    /* AVATAR CIRCOLARE */
     .profile-avatar {
       width: 85px;
       height: 85px;
@@ -103,7 +100,6 @@
       text-decoration: underline;
     }
 
-    /* BOX INFORMATIVI */
     .info-box {
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -139,7 +135,23 @@
       object-fit: contain;
     }
 
-    /* INPUTS & FORMS */
+    /* BARRA XP NEL PROFILO */
+    .profile-xp-bar-container {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .profile-xp-bar-fill {
+      height: 100%;
+      background: #10b981;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
     .auth-input {
       width: 100%;
       padding: 11px 14px;
@@ -183,7 +195,6 @@
       color: #fff;
     }
 
-    /* PULSANTI */
     .btn {
       display: block;
       width: 100%;
@@ -262,11 +273,23 @@
       </div>
 
       <div class="info-box">
-        <div class="info-label">Livello</div>
+        <div class="info-label">Livello & XP</div>
         <div class="level-row">
-          <span id="level-text-display" class="info-value">Livello 1</span>
+          <div>
+            <span id="level-text-display" class="info-value">Livello 1</span>
+            <div id="xp-details-text" style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">0 / 100 XP</div>
+          </div>
           <img id="level-box-img" src="1.png" alt="Badge Livello" class="level-mini-icon">
         </div>
+        <div class="profile-xp-bar-container">
+          <div id="profile-xp-fill" class="profile-xp-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Spazio predisposto per la futura valuta -->
+      <div class="info-box" id="currency-box">
+        <div class="info-label">Valuta di Gioco</div>
+        <div class="info-value" id="currency-display">💎 0 Monete (In arrivo)</div>
       </div>
 
       <button class="btn btn-danger" onclick="handleLogout()">Disconnettiti</button>
@@ -337,16 +360,6 @@
       }
     };
 
-    // Aggiornamento livello e grafica locale
-    function loadLevelData() {
-      const savedLevel = localStorage.getItem('user_level') || '1';
-      document.getElementById('level-text-display').innerText = `Livello ${savedLevel}`;
-      document.getElementById('level-top-img').src = `${savedLevel}.png`;
-      document.getElementById('level-box-img').src = `${savedLevel}.png`;
-    }
-
-    loadLevelData();
-
     onAuthStateChanged(auth, async (user) => {
       const profileSection = document.getElementById('profile-section');
       const authSection = document.getElementById('auth-section');
@@ -358,7 +371,9 @@
         profileSection.classList.remove('hidden');
         changeImgBtn.style.display = 'inline-block';
 
-        let detectedName = "";
+        let detectedName = "Giocatore";
+        let userXp = 0;
+
         try {
           const userDocRef = doc(db, "utenti", user.uid);
           const userDocSnap = await getDoc(userDocRef);
@@ -367,21 +382,42 @@
             const data = userDocSnap.data();
             if (data.username) detectedName = data.username;
             else if (data.nickname) detectedName = data.nickname;
+            
+            userXp = data.xp || 0;
+          } else {
+            // Se l'utente non ha ancora il documento in "utenti", lo inizializziamo
+            await setDoc(userDocRef, {
+              username: user.email ? user.email.split('@')[0] : "Giocatore",
+              xp: 0,
+              level: 1,
+              wins: 0,
+              createdAt: new Date()
+            }, { merge: true });
           }
         } catch (err) {
           console.warn("Firestore error:", err);
         }
 
-        if (!detectedName) {
-          if (user.email) {
-            const rawName = user.email.split('@')[0];
-            detectedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-          } else {
-            detectedName = "Giocatore";
-          }
+        if (detectedName === "Giocatore" && user.email) {
+          const rawName = user.email.split('@')[0];
+          detectedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
         }
 
         usernameElem.innerText = detectedName;
+
+        // Calcolo livello e XP (100 XP per livello)
+        const currentLevel = Math.floor(userXp / 100) + 1;
+        const xpInLevel = userXp % 100;
+
+        document.getElementById('level-text-display').innerText = `Livello ${currentLevel}`;
+        document.getElementById('xp-details-text').innerText = `${xpInLevel} / 100 XP (Totale: ${userXp})`;
+        document.getElementById('profile-xp-fill').style.width = `${xpInLevel}%`;
+
+        // Gestione icone livello (controlla che esista l'immagine o usa di fallback)
+        const badgeImgPath = `${currentLevel}.png`;
+        document.getElementById('level-top-img').src = badgeImgPath;
+        document.getElementById('level-box-img').src = badgeImgPath;
+
       } else {
         profileSection.classList.add('hidden');
         authSection.classList.remove('hidden');
@@ -409,9 +445,12 @@
           await signInWithEmailAndPassword(auth, emailToUse, password);
         } else {
           const userCred = await createUserWithEmailAndPassword(auth, emailToUse, password);
-          // Salva su Firestore
+          // Salva su Firestore nella collezione "utenti"
           await setDoc(doc(db, "utenti", userCred.user.uid), {
             username: inputNick,
+            xp: 0,
+            level: 1,
+            wins: 0,
             createdAt: new Date()
           });
         }
