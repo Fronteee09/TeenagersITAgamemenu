@@ -62,7 +62,7 @@
       margin-bottom: 25px;
     }
 
-    /* SEZIONE PROGRESSO XP */
+    /* SEZIONE PROFILO UTENTE (XP & MONETE) */
     .progress-card {
       background: rgba(30, 41, 59, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -86,6 +86,7 @@
       background: rgba(255, 255, 255, 0.1);
       border-radius: 7px;
       overflow: hidden;
+      margin-bottom: 12px;
     }
 
     .xp-bar-fill {
@@ -93,6 +94,15 @@
       background: linear-gradient(90deg, #2563eb, #10b981);
       width: 0%;
       transition: width 0.4s ease;
+    }
+
+    .user-wallet {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #f59e0b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     /* CONTROLLI ADMIN */
@@ -143,11 +153,20 @@
       justify-content: space-between;
       align-items: center;
       text-align: left;
+      gap: 15px;
+    }
+
+    .shop-item-img {
+      width: 55px;
+      height: 55px;
+      object-fit: contain;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .shop-item-info {
       flex: 1;
-      padding-right: 15px;
     }
 
     .shop-item-title {
@@ -165,7 +184,7 @@
     }
 
     .shop-item-cost {
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       font-weight: bold;
       color: #f59e0b;
     }
@@ -188,7 +207,7 @@
       color: #f87171;
       font-size: 0.75rem;
       cursor: pointer;
-      margin-left: 10px;
+      margin-left: 8px;
     }
 
     .btn-delete-admin:hover {
@@ -230,9 +249,9 @@
 
   <div class="main-container">
     <h1>🛒 Shop & Livelli</h1>
-    <p class="subtitle">Vinci le partite per guadagnare XP e sbloccare ricompense!</p>
+    <p class="subtitle">Vinci le partite per guadagnare XP e Monete e sbloccare ricompense!</p>
 
-    <!-- PROFILO XP -->
+    <!-- PROFILO XP E VALUTA -->
     <div class="progress-card">
       <div class="progress-info">
         <span id="user-level-text">Livello 1</span>
@@ -241,6 +260,7 @@
       <div class="xp-bar-container">
         <div id="xp-bar-fill" class="xp-bar-fill"></div>
       </div>
+      <div class="user-wallet" id="user-coins-display">💎 0 Monete</div>
     </div>
 
     <!-- PANNELLO ADMIN (SOLO UID AUTORIZZATI) -->
@@ -257,16 +277,17 @@
     <a href="index.html" class="back-link">← Torna al Menu Principale</a>
   </div>
 
-  <!-- MODALE CREAZIONE OFFERTA (ADMIN) -->
+  <!-- MODALE CREAZIONE OFFERTA (ADMIN) CON CAMPO URL IMMAGINE -->
   <div id="offer-modal" class="modal hidden">
     <div class="modal-content">
       <h3 style="margin-bottom: 8px; color: #34d399;">Crea Nuova Offerta</h3>
-      <p style="margin-bottom: 15px; font-size: 0.85rem; color: #94a3b8;">Inserisci i dettagli dell'offerta da aggiungere allo shop per tutti gli utenti.</p>
+      <p style="margin-bottom: 15px; font-size: 0.85rem; color: #94a3b8;">Inserisci i dettagli e il link URL dell'immagine.</p>
 
       <form id="offer-form" onsubmit="submitNewOffer(event)">
         <input type="text" id="off-title" placeholder="Titolo dell'offerta / Nome Carta" required class="modal-input">
-        <textarea id="off-desc" placeholder="Corpo del testo / Descrizione dettagliata" required class="modal-input" style="height: 80px; resize: none;"></textarea>
-        <input type="text" id="off-cost" placeholder="Costo dell'oggetto o Livello richiesto (es. 100 XP / Lv. 2)" required class="modal-input">
+        <textarea id="off-desc" placeholder="Descrizione dettagliata" required class="modal-input" style="height: 70px; resize: none;"></textarea>
+        <input type="text" id="off-cost" placeholder="Costo (es. 50 Monete o Lv. 2)" required class="modal-input">
+        <input type="url" id="off-image" placeholder="Link URL Immagine (es. https://... o logo.png)" required class="modal-input">
         
         <div class="modal-btns">
           <button type="submit" class="btn-add-offer" style="flex:1;">Pubblica Offerta</button>
@@ -322,17 +343,17 @@
         }
 
         try {
-          // CORRETTO: Usa la collezione "utenti" in italiano
           const userRef = doc(db, "utenti", user.uid);
           let userSnap = await getDoc(userRef);
 
-          // Se l'utente esiste su Auth ma non ha ancora i campi xp/livello in "utenti", li crea
           if (!userSnap.exists() || !userSnap.data().hasOwnProperty('xp')) {
             await setDoc(userRef, {
               username: user.email ? user.email.split('@')[0] : "Giocatore",
               xp: 0,
               level: 1,
-              wins: 0
+              wins: 0,
+              coins: 0,
+              avatar: "logo.png"
             }, { merge: true });
             userSnap = await getDoc(userRef);
           }
@@ -340,15 +361,17 @@
           if (userSnap.exists()) {
             const data = userSnap.data();
             const xp = data.xp || 0;
+            const coins = data.coins || 0;
             const level = Math.floor(xp / 100) + 1;
             const xpInCurrentLevel = xp % 100;
 
             document.getElementById('user-level-text').innerText = `Livello ${level}`;
             document.getElementById('user-xp-text').innerText = `${xpInCurrentLevel} / 100 XP (Totale: ${xp})`;
             document.getElementById('xp-bar-fill').style.width = `${xpInCurrentLevel}%`;
+            document.getElementById('user-coins-display').innerText = `💎 ${coins} Monete`;
           }
         } catch (err) {
-          console.error("Errore recupero XP utente:", err);
+          console.error("Errore recupero dati utente:", err);
         }
 
         listenToShopOffers();
@@ -358,7 +381,6 @@
       }
     });
 
-    // Ascolta e aggiorna le offerte dello Shop in tempo reale
     function listenToShopOffers() {
       const q = query(collection(db, "shopOffers"), orderBy("timestamp", "desc"));
       onSnapshot(q, (snapshot) => {
@@ -373,14 +395,16 @@
         snapshot.forEach((docSnap) => {
           const offer = docSnap.data();
           const offerId = docSnap.id;
+          const imageUrl = offer.image || "logo.png";
 
           const itemEl = document.createElement('div');
           itemEl.className = 'shop-item';
           itemEl.innerHTML = `
+            <img src="${imageUrl}" class="shop-item-img" onerror="this.src='logo.png'">
             <div class="shop-item-info">
               <div class="shop-item-title">${offer.title}</div>
               <div class="shop-item-desc">${offer.desc}</div>
-              <div class="shop-item-cost">Requisito / Costo: ${offer.cost}</div>
+              <div class="shop-item-cost">Costo: ${offer.cost}</div>
             </div>
             <div style="display: flex; align-items: center;">
               <button class="btn-buy" onclick="alert('Offerta selezionata!')">Sblocca</button>
@@ -392,7 +416,6 @@
       });
     }
 
-    // Modal Admin per creare offerte
     window.openOfferModal = function() { document.getElementById('offer-modal').classList.remove('hidden'); }
     window.closeOfferModal = function() { document.getElementById('offer-modal').classList.add('hidden'); }
 
@@ -403,12 +426,14 @@
       const title = document.getElementById('off-title').value.trim();
       const desc = document.getElementById('off-desc').value.trim();
       const cost = document.getElementById('off-cost').value.trim();
+      const image = document.getElementById('off-image').value.trim();
 
       try {
         await addDoc(collection(db, "shopOffers"), {
           title: title,
           desc: desc,
           cost: cost,
+          image: image,
           timestamp: Date.now()
         });
 
