@@ -35,6 +35,7 @@
       height: 100%;
       background: rgba(5, 10, 20, 0.65);
       backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       z-index: 1;
     }
 
@@ -49,6 +50,7 @@
       padding: 35px 25px;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
       backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       text-align: center;
     }
 
@@ -156,16 +158,28 @@
       transition: width 0.4s ease;
     }
 
-    /* MODALE SCELTA AVATAR (ADMIN) */
+    /* MODALE SCELTA AVATAR (SOLO ADMIN) */
     .modal {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.75); display: flex; justify-content: center; align-items: center;
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75); 
+      display: flex; 
+      justify-content: center; 
+      align-items: center;
       z-index: 10;
     }
     .modal.hidden { display: none !important; }
     .modal-content {
-      background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 16px; padding: 25px; width: 90%; max-width: 380px; text-align: center;
+      background: #0f172a; 
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px; 
+      padding: 25px; 
+      width: 90%; 
+      max-width: 380px; 
+      text-align: center;
     }
     .avatar-grid {
       display: grid;
@@ -291,7 +305,7 @@
     
     <!-- BADGE LIVELLO IN ALTO A DESTRA -->
     <div class="level-badge" title="Il tuo Livello">
-      <img id="level-top-img" src="1.png" alt="Livello 1" class="level-icon-top">
+      <img id="level-top-img" src="1.png" alt="Livello 1" class="level-icon-top" onerror="this.src='logo.png'">
     </div>
 
     <!-- AVATAR -->
@@ -300,7 +314,7 @@
     </div>
     
     <h1 id="page-title">Profilo Giocatore</h1>
-    <a href="#" id="change-img-btn" class="change-img-link hidden" onclick="openAvatarModal(); return false;">📷 Cambia Immagine</a>
+    <a href="#" id="change-img-btn" class="change-img-link hidden" onclick="openAvatarModal(); return false;">✏️ Cambia Immagine</a>
 
     <!-- SEZIONE PROFILO (Visibile se loggato) -->
     <div id="profile-section" class="hidden">
@@ -316,14 +330,14 @@
             <span id="level-text-display" class="info-value">Livello 1</span>
             <div id="xp-details-text" style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">0 / 100 XP</div>
           </div>
-          <img id="level-box-img" src="1.png" alt="Badge Livello" class="level-mini-icon">
+          <img id="level-box-img" src="1.png" alt="Badge Livello" class="level-mini-icon" onerror="this.src='logo.png'">
         </div>
         <div class="profile-xp-bar-container">
           <div id="profile-xp-fill" class="profile-xp-bar-fill"></div>
         </div>
       </div>
 
-      <!-- Spazio valuta -->
+      <!-- SEZIONE VALUTA -->
       <div class="info-box" id="currency-box">
         <div class="info-label">Valuta di Gioco</div>
         <div class="info-value" id="currency-display">💎 0 Monete</div>
@@ -339,7 +353,7 @@
         <button id="tab-register" class="tab-btn" onclick="switchMode('register')">Registrati</button>
       </div>
 
-      <form onsubmit="handleAuth(event)">
+      <form id="auth-form" onsubmit="handleAuth(event)">
         <input type="text" id="auth-nickname" class="auth-input" placeholder="Il tuo Nickname" required autocomplete="username">
         <input type="password" id="auth-password" class="auth-input" placeholder="Password (min. 6 caratteri)" required autocomplete="current-password">
         <div id="auth-error"></div>
@@ -371,7 +385,7 @@
     </div>
   </div>
 
-  <!-- SCRIPT -->
+  <!-- FIREBASE & LOGICA -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
@@ -431,12 +445,11 @@
       const avatarImg = document.getElementById('profile-avatar-img');
 
       if (user) {
-        currentUser = user;
         loggedUserId = user.uid;
         authSection.classList.add('hidden');
         profileSection.classList.remove('hidden');
 
-        // Mostra il tasto cambio immagine SOLO se l'utente è tra i 3 admin autorizzati
+        // Mostra il tasto per la matita/cambio immagine SOLO ai 3 admin autorizzati
         if (ADMIN_UIDS.includes(user.uid)) {
           changeImgBtn.classList.remove('hidden');
         } else {
@@ -461,6 +474,7 @@
             userCoins = data.coins || 0;
             if (data.avatar) userAvatar = data.avatar;
           } else {
+            // Crea automaticamente i dati iniziali se il documento non esiste ancora
             await setDoc(userDocRef, {
               username: user.email ? user.email.split('@')[0] : "Giocatore",
               xp: 0,
@@ -472,7 +486,7 @@
             }, { merge: true });
           }
         } catch (err) {
-          console.warn("Firestore error:", err);
+          console.warn("Errore caricamento profilo da Firestore:", err);
         }
 
         if (detectedName === "Giocatore" && user.email) {
@@ -483,7 +497,7 @@
         usernameElem.innerText = detectedName;
         avatarImg.src = userAvatar;
 
-        // Calcolo livello e XP
+        // Calcolo del livello e progressione XP
         const currentLevel = Math.floor(userXp / 100) + 1;
         const xpInLevel = userXp % 100;
 
@@ -506,11 +520,11 @@
 
     window.openAvatarModal = function() {
       document.getElementById('avatar-modal').classList.remove('hidden');
-    }
+    };
 
     window.closeAvatarModal = function() {
       document.getElementById('avatar-modal').classList.add('hidden');
-    }
+    };
 
     window.selectNewAvatar = async function(avatarFileName) {
       if (!loggedUserId || !ADMIN_UIDS.includes(loggedUserId)) {
@@ -524,7 +538,6 @@
 
         document.getElementById('profile-avatar-img').src = avatarFileName;
         closeAvatarModal();
-        alert("Immagine profilo aggiornata con successo!");
       } catch (err) {
         console.error("Errore salvataggio avatar:", err);
         alert("Errore durante l'aggiornamento dell'immagine.");
@@ -562,6 +575,7 @@
           });
         }
       } catch (err) {
+        console.error("Errore Autenticazione:", err);
         if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
           errorDiv.innerText = "Nickname o Password non corretti.";
         } else if (err.code === 'auth/email-already-in-use') {
@@ -569,7 +583,7 @@
         } else if (err.code === 'auth/weak-password') {
           errorDiv.innerText = "La password deve avere almeno 6 caratteri.";
         } else {
-          errorDiv.innerText = "Errore: " + err.message;
+          errorDiv.innerText = "Errore di connessione: " + err.message;
         }
       }
     };
