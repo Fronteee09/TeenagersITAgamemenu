@@ -123,16 +123,46 @@
 
     .player-header {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 10px;
       margin-bottom: 10px;
       font-weight: bold;
+    }
+
+    .player-info-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .player-avatar {
       width: 35px;
       height: 35px;
       border-radius: 50%;
+      object-fit: cover;
+    }
+
+    /* BARRA XP IN BATTAGLIA */
+    .player-xp-container {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      text-align: right;
+    }
+
+    .mini-xp-bar {
+      width: 100px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 3px;
+    }
+
+    .mini-xp-fill {
+      height: 100%;
+      background: #10b981;
+      width: 0%;
+      transition: width 0.3s;
     }
 
     .cards-row {
@@ -273,8 +303,14 @@
         <!-- SEZIONE BOT -->
         <div class="player-section">
           <div class="player-header">
-            <img src="logo.png" class="player-avatar">
-            <span id="bot-name">Bot (IA)</span>
+            <div class="player-info-left">
+              <img src="logo.png" class="player-avatar">
+              <span id="bot-name">Bot (IA)</span>
+            </div>
+            <div class="player-xp-container">
+              <span id="bot-level-text">Lv. 5</span>
+              <div class="mini-xp-bar"><div class="mini-xp-fill" style="width: 50%;"></div></div>
+            </div>
           </div>
           <div id="bot-hand" class="cards-row"></div>
         </div>
@@ -282,8 +318,14 @@
         <!-- SEZIONE GIOCATORE -->
         <div class="player-section">
           <div class="player-header">
-            <img src="logo.png" class="player-avatar">
-            <span id="my-name">Tu (Giocatore)</span>
+            <div class="player-info-left">
+              <img id="my-avatar" src="logo.png" class="player-avatar">
+              <span id="my-name">Tu (Giocatore)</span>
+            </div>
+            <div class="player-xp-container">
+              <span id="my-level-text">Lv. 1</span>
+              <div class="mini-xp-bar"><div id="my-xp-fill" class="mini-xp-fill"></div></div>
+            </div>
           </div>
           <div id="my-hand" class="cards-row"></div>
         </div>
@@ -294,7 +336,27 @@
 
   </div>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCqjJNoMeliQskPzlMAGOqeF_-aFZuksY",
+      authDomain: "teenagersita-cards.firebaseapp.com",
+      projectId: "teenagersita-cards",
+      storageBucket: "teenagersita-cards.firebasestorage.app",
+      messagingSenderId: "651917703980",
+      appId: "1:651917703980:web:d4c8f87b4645e97c46ca89"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+    let userProfileData = { username: "Giocatore", xp: 0, level: 1, coins: 0, avatar: "logo.png" };
+
     // ARCHIVIO CARTE COMPLETO
     const teenCardsArchive = {
       "frontealpino": { name: "Fronte Alpino", image: "frontealpino.png", hp: 80, maxHp: 80, attack: { damage: 10 }, ability: { name: "Abilità", damage: 20 } },
@@ -313,6 +375,32 @@
     let targetingMode = false;
     let selectedAttackerIndex = null;
     let selectedMoveType = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        try {
+          const userDocRef = doc(db, "utenti", user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+
+          if (userDocSnap.exists()) {
+            const data = userDocSnap.data();
+            userProfileData.username = data.username || user.email.split('@')[0];
+            userProfileData.xp = data.xp || 0;
+            userProfileData.coins = data.coins || 0;
+            userProfileData.avatar = data.avatar || "logo.png";
+            userProfileData.level = Math.floor(userProfileData.xp / 100) + 1;
+          } else {
+            userProfileData.username = user.email ? user.email.split('@')[0] : "Giocatore";
+          }
+        } catch (err) {
+          console.error("Errore caricamento dati utente:", err);
+        }
+      } else {
+        alert("Devi accedere per giocare!");
+        window.location.href = "account.html";
+      }
+    });
 
     function generateRandomHand() {
       const keys = Object.keys(teenCardsArchive);
@@ -339,7 +427,7 @@
       return hand;
     }
 
-    function startBotGame() {
+    window.startBotGame = function() {
       playerHand = generateRandomHand();
       botHand = generateRandomHand();
       isMyTurn = true;
@@ -352,6 +440,15 @@
 
     function updateUI() {
       const turnBadge = document.getElementById('turn-badge');
+
+      // Aggiorna intestazione giocatore con dati reali
+      document.getElementById('my-name').innerText = userProfileData.username + " (Tu)";
+      document.getElementById('my-avatar').src = userProfileData.avatar;
+      
+      const myLvl = Math.floor(userProfileData.xp / 100) + 1;
+      const myXpInLvl = userProfileData.xp % 100;
+      document.getElementById('my-level-text').innerText = `Lv. ${myLvl}`;
+      document.getElementById('my-xp-fill').style.width = `${myXpInLvl}%`;
 
       if (isMyTurn) {
         if (targetingMode) {
@@ -413,7 +510,7 @@
       });
     }
 
-    function prepareMove(cardIndex, type) {
+    window.prepareMove = function(cardIndex, type) {
       if (!isMyTurn) return;
       selectedAttackerIndex = cardIndex;
       selectedMoveType = type;
@@ -421,7 +518,7 @@
       updateUI();
     }
 
-    function executePlayerMove(targetIndex) {
+    window.executePlayerMove = async function(targetIndex) {
       if (!isMyTurn || !targetingMode) return;
 
       const attacker = playerHand[selectedAttackerIndex];
@@ -450,7 +547,8 @@
 
       // Controlla se il bot ha perso
       if (!botHand.some(c => c.hp > 0)) {
-        alert("🎉 Complimenti! Hai sconfitto il Bot!");
+        alert("🎉 Complimenti! Hai sconfitto il Bot e guadagnato +15 XP e +5 Monete!");
+        await awardWinAndRewards(currentUser.uid);
         quitGame();
         return;
       }
@@ -458,23 +556,48 @@
       // Passa il turno al Bot
       isMyTurn = false;
       updateUI();
-      setTimeout(botTurn, 1500); // Ritardo di 1.5 secondi per simulare la mossa del bot
+      setTimeout(botTurn, 1500);
     }
 
-    // LOGICA DEL BOT (IA BILANCIATA)
+    // Assegna ricompense su Firestore in caso di vittoria contro il bot
+    async function awardWinAndRewards(userId) {
+      try {
+        const userRef = doc(db, "utenti", userId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const d = userSnap.data();
+          const currentXp = (d.xp || 0) + 15;
+          const currentCoins = (d.coins || 0) + 5;
+          const currentWins = (d.wins || 0) + 1;
+          const newLevel = Math.floor(currentXp / 100) + 1;
+
+          await updateDoc(userRef, {
+            xp: currentXp,
+            coins: currentCoins,
+            wins: currentWins,
+            level: newLevel
+          });
+
+          // Aggiorna lo stato locale
+          userProfileData.xp = currentXp;
+          userProfileData.coins = currentCoins;
+          userProfileData.level = newLevel;
+        }
+      } catch (err) {
+        console.error("Errore salvataggio ricompense bot:", err);
+      }
+    }
+
+    // LOGICA DEL BOT
     function botTurn() {
       const aliveBotCards = botHand.filter(c => c.hp > 0);
       const alivePlayerCards = playerHand.filter(c => c.hp > 0);
 
       if (aliveBotCards.length === 0 || alivePlayerCards.length === 0) return;
 
-      // Sceglie una carta viva a caso del bot
       const botAttacker = aliveBotCards[Math.floor(Math.random() * aliveBotCards.length)];
-      
-      // Sceglie un bersaglio vivo a caso tra le tue carte
       const targetPlayerCard = alivePlayerCards[Math.floor(Math.random() * alivePlayerCards.length)];
 
-      // Sceglie casualmente il tipo di mossa (Attacco base o abilità se non usata)
       const availableMoves = ['attack'];
       if (!botAttacker.abilityUsed) availableMoves.push('ability');
       if (botAttacker.ability2Name && !botAttacker.ability2Used) availableMoves.push('ability2');
@@ -494,19 +617,17 @@
 
       targetPlayerCard.hp -= damage;
 
-      // Controlla se il giocatore ha perso
       if (!playerHand.some(c => c.hp > 0)) {
         alert("💀 Il Bot ha vinto la partita! Ritenta.");
         quitGame();
         return;
       }
 
-      // Ritorna il turno al giocatore
       isMyTurn = true;
       updateUI();
     }
 
-    function quitGame() {
+    window.quitGame = function() {
       document.getElementById('battle-view').classList.add('hidden');
       document.getElementById('menu-view').classList.remove('hidden');
     }
