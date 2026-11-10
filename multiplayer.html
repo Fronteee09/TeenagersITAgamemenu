@@ -483,7 +483,7 @@
     const db = getFirestore(app);
 
     let currentUser = null;
-    let userProfileData = { username: "Giocatore", xp: 0, level: 1 };
+    let userProfileData = { username: "Giocatore", xp: 0, level: 1, coins: 0 };
     let activeRoomId = null;
     let unsubscribeRoomListener = null;
 
@@ -500,12 +500,12 @@
           document.getElementById('admin-reset-btn').classList.remove('hidden');
         }
 
-        // CORRETTO: Usa la collezione "utenti" invece di "users"
         const userDoc = await getDoc(doc(db, "utenti", user.uid));
         if (userDoc.exists()) {
           const d = userDoc.data();
           userProfileData.username = d.username || user.email.split('@')[0];
           userProfileData.xp = d.xp || 0;
+          userProfileData.coins = d.coins || 0;
           userProfileData.level = Math.floor(userProfileData.xp / 100) + 1;
         } else {
           userProfileData.username = user.email ? user.email.split('@')[0] : "Giocatore";
@@ -904,8 +904,8 @@
       // CONTROLLO VITTORIA: Se l'avversario non ha più carte vive
       const hasEnemyAlive = enemyData.hand.some(c => c.hp > 0);
       if (!hasEnemyAlive) {
-        alert("🎉 Complimenti! Hai vinto la partita e guadagnato +15 XP!");
-        await awardWinAndXP(currentUser.uid);
+        alert("🎉 Complimenti! Hai vinto la partita e guadagnato +15 XP e +5 Monete!");
+        await awardWinAndRewards(currentUser.uid);
         window.leaveRoom();
         return;
       }
@@ -926,32 +926,34 @@
       await updateDoc(roomRef, updatePayload);
     };
 
-    // Assegna 15 XP al vincitore su Firestore (collezione "utenti")
-    async function awardWinAndXP(userId) {
+    // Assegna 15 XP e 5 Monete al vincitore su Firestore (collezione "utenti")
+    async function awardWinAndRewards(userId) {
       try {
         const userRef = doc(db, "utenti", userId);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const d = userSnap.data();
           const currentXp = (d.xp || 0) + 15;
+          const currentCoins = (d.coins || 0) + 5;
           const currentWins = (d.wins || 0) + 1;
           const newLevel = Math.floor(currentXp / 100) + 1;
 
           await updateDoc(userRef, {
             xp: currentXp,
+            coins: currentCoins,
             wins: currentWins,
             level: newLevel
           });
         } else {
-          // Se per qualche motivo il documento non esiste, lo crea
           await setDoc(userRef, {
             xp: 15,
+            coins: 5,
             wins: 1,
             level: 1
           }, { merge: true });
         }
       } catch (err) {
-        console.error("Errore aggiornamento XP vittoria:", err);
+        console.error("Errore aggiornamento ricompense vittoria:", err);
       }
     }
 
