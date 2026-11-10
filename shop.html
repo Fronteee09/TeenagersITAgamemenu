@@ -284,6 +284,7 @@
       getFirestore, 
       doc, 
       getDoc, 
+      setDoc,
       collection, 
       addDoc, 
       deleteDoc, 
@@ -321,9 +322,23 @@
         }
 
         try {
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
+          // CORRETTO: Usa la collezione "utenti" in italiano
+          const userRef = doc(db, "utenti", user.uid);
+          let userSnap = await getDoc(userRef);
+
+          // Se l'utente esiste su Auth ma non ha ancora i campi xp/livello in "utenti", li crea
+          if (!userSnap.exists() || !userSnap.data().hasOwnProperty('xp')) {
+            await setDoc(userRef, {
+              username: user.email ? user.email.split('@')[0] : "Giocatore",
+              xp: 0,
+              level: 1,
+              wins: 0
+            }, { merge: true });
+            userSnap = await getDoc(userRef);
+          }
+
+          if (userSnap.exists()) {
+            const data = userSnap.data();
             const xp = data.xp || 0;
             const level = Math.floor(xp / 100) + 1;
             const xpInCurrentLevel = xp % 100;
