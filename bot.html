@@ -8,6 +8,10 @@
   <!-- FAVICON -->
   <link rel="icon" type="image/png" href="logo.png">
 
+  <!-- WEB APP (PWA) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+
   <style>
     * {
       box-sizing: border-box;
@@ -441,7 +445,6 @@
     function updateUI() {
       const turnBadge = document.getElementById('turn-badge');
 
-      // Aggiorna intestazione giocatore con dati reali
       document.getElementById('my-name').innerText = userProfileData.username + " (Tu)";
       document.getElementById('my-avatar').src = userProfileData.avatar;
       
@@ -545,7 +548,6 @@
       target.hp -= damage;
       targetingMode = false;
 
-      // Controlla se il bot ha perso
       if (!botHand.some(c => c.hp > 0)) {
         alert("🎉 Complimenti! Hai sconfitto il Bot e guadagnato +15 XP e +5 Monete!");
         await awardWinAndRewards(currentUser.uid);
@@ -553,13 +555,11 @@
         return;
       }
 
-      // Passa il turno al Bot
       isMyTurn = false;
       updateUI();
       setTimeout(botTurn, 1500);
     }
 
-    // Assegna ricompense su Firestore in caso di vittoria contro il bot
     async function awardWinAndRewards(userId) {
       try {
         const userRef = doc(db, "utenti", userId);
@@ -578,7 +578,6 @@
             level: newLevel
           });
 
-          // Aggiorna lo stato locale
           userProfileData.xp = currentXp;
           userProfileData.coins = currentCoins;
           userProfileData.level = newLevel;
@@ -588,7 +587,6 @@
       }
     }
 
-    // LOGICA DEL BOT
     function botTurn() {
       const aliveBotCards = botHand.filter(c => c.hp > 0);
       const alivePlayerCards = playerHand.filter(c => c.hp > 0);
