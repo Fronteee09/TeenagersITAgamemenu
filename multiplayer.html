@@ -8,6 +8,10 @@
   <!-- FAVICON -->
   <link rel="icon" type="image/png" href="logo.png">
 
+  <!-- WEB APP (PWA) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+
   <style>
     * {
       box-sizing: border-box;
@@ -764,7 +768,6 @@
           targetingMode = false;
         }
 
-        // Renderizza i tuoi dati e XP
         if (myData) {
           document.getElementById('my-name').innerText = myData.username + " (Tu)";
           const myXp = myData.xp || 0;
@@ -776,7 +779,6 @@
           renderHand(document.getElementById('my-hand'), myData.hand, true, isMyTurn);
         }
 
-        // Renderizza dati e XP dell'avversario
         if (enemyData) {
           document.getElementById('enemy-name').innerText = enemyData.username;
           const enemyXp = enemyData.xp || 0;
@@ -901,7 +903,6 @@
       enemyData.hand[targetCardIndex].hp -= damage;
       targetingMode = false;
 
-      // CONTROLLO VITTORIA: Se l'avversario non ha più carte vive
       const hasEnemyAlive = enemyData.hand.some(c => c.hp > 0);
       if (!hasEnemyAlive) {
         alert("🎉 Complimenti! Hai vinto la partita e guadagnato +15 XP e +5 Monete!");
@@ -926,7 +927,6 @@
       await updateDoc(roomRef, updatePayload);
     };
 
-    // Assegna 15 XP e 5 Monete al vincitore su Firestore (collezione "utenti")
     async function awardWinAndRewards(userId) {
       try {
         const userRef = doc(db, "utenti", userId);
