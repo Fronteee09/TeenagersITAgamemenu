@@ -8,6 +8,10 @@
   <!-- FAVICON -->
   <link rel="icon" type="image/png" href="logo.png">
 
+  <!-- WEB APP (PWA) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+
   <style>
     * {
       box-sizing: border-box;
@@ -417,7 +421,7 @@
               xp: 0,
               level: 1,
               wins: 0,
-              coins: 100, // Bonus iniziale per testare lo shop
+              coins: 100,
               inventory: [],
               avatar: "logo.png"
             }, { merge: true });
@@ -451,7 +455,6 @@
       document.getElementById('xp-bar-fill').style.width = `${xpInCurrentLevel}%`;
       document.getElementById('user-coins-display').innerText = `💎 ${coins} Monete`;
 
-      // Renderizza la collezione
       const collectionGrid = document.getElementById('collection-grid');
       collectionGrid.innerHTML = "";
 
@@ -533,7 +536,6 @@
           inventory: arrayUnion(newItem)
         });
 
-        // Aggiorna stato locale
         currentUserData.coins = newCoins;
         if (!currentUserData.inventory) currentUserData.inventory = [];
         currentUserData.inventory.push(newItem);
